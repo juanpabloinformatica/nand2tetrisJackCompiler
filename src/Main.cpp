@@ -3,7 +3,8 @@
 #include <cstdlib>
 
 int main() {
-  JackAnalyzer JackAnalyzer = JackAnalyzer("");
-
+  JackAnalyzer jackAnalyzer =
+      JackAnalyzer("<any_path>");
+  jackAnalyzer.run();
   return EXIT_SUCCESS;
 }
