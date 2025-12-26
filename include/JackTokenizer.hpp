@@ -1,10 +1,11 @@
 #ifndef __TOKENIZER__
 #define __TOKENIZER__
 #include <fstream>
+#include <string>
 class JackTokenizer {
 public:
-  std::ifstream inputFile;
-  JackTokenizer(std::string inputFilePath) {};
+  std::ifstream &inputFile;
+  JackTokenizer(std::ifstream &inputFile);
   bool hasMoreTokens();
   void advance();
   enum TokenType {
@@ -43,6 +44,7 @@ public:
   std::string getIdentifier();
   int getIntVal();
   std::string getStringVal();
+  void run();
 };
 
 #endif
