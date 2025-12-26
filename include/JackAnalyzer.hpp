@@ -1,20 +1,21 @@
 #ifndef __ANALYZER__
 #define __ANALYZER__
-// #import <JackTokenizer.h>
+#include "JackTokenizer.hpp"
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 class JackAnalyzer {
 public:
   // JackTokenizer jackTokenizer;
-  const std::string &sourcePath;
+  const std::filesystem::path sourcePath;
   JackAnalyzer(const std::string &filepath);
   ~JackAnalyzer();
   void run();
 
 private:
-  void handleFile();
-  void handleFolder();
+  void handleFile(const std::filesystem::path &filePath);
+  void handleFolder(const std::filesystem::path &fileFolder);
 };
 
 #endif
