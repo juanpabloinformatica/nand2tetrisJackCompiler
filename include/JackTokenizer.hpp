@@ -1,21 +1,25 @@
 #ifndef __TOKENIZER__
 #define __TOKENIZER__
 #include <fstream>
+#include <map>
 #include <string>
+#include <vector>
 class JackTokenizer {
 public:
   std::ifstream &inputFile;
   JackTokenizer(std::ifstream &inputFile);
-  bool hasMoreTokens();
-  void advance();
+  ~JackTokenizer();
+  // bool hasMoreTokens();
+  // void advance();
   enum TokenType {
+    UNDEFINED = -1,
     KEYWORD,
     SYMBOL,
     IDENTIFIER,
     INT_CONST,
     STRING_CONST,
   };
-  TokenType getTokenType();
+  std::vector<std::map<std::string, TokenType> *> tokenList;
   enum Keyword {
     CLASS,
     METHOD,
@@ -45,6 +49,15 @@ public:
   int getIntVal();
   std::string getStringVal();
   void run();
+
+private:
+  /*list of mapObjects*/
+  /*This list needs to be traverse and deallocate each map object pointer*/
+  std::map<std::string, TokenType> *
+  allocateMapObject(const std::string &token, const TokenType tokenType);
+
+  TokenType getTokenType(const std::string &token);
+  void appendTokenToTokenList(const std::string &token);
 };
 
 #endif
