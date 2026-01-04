@@ -9,8 +9,6 @@ public:
   std::ifstream &inputFile;
   JackTokenizer(std::ifstream &inputFile);
   ~JackTokenizer();
-  // bool hasMoreTokens();
-  // void advance();
   enum TokenType {
     UNDEFINED = -1,
     KEYWORD,
@@ -49,6 +47,7 @@ public:
   int getIntVal();
   std::string getStringVal();
   void run();
+	void showTokenList();
 
 private:
   /*list of mapObjects*/
@@ -58,6 +57,7 @@ private:
 
   TokenType getTokenType(const std::string &token);
   void appendTokenToTokenList(const std::string &token);
+  bool isTokenSymbol(const char& character);
 };
 
 #endif
