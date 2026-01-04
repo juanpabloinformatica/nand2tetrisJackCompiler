@@ -1,34 +1,53 @@
 #include "JackTokenizer.hpp"
 #include <algorithm>
+#include <iostream>
 #include <regex>
 JackTokenizer::JackTokenizer(std::ifstream &inputFile) : inputFile(inputFile) {
   this->tokenList = std::vector<std::map<std::string, TokenType> *>();
 }
 
-// bool JackTokenizer::hasMoreTokens() {
-//   return this->inputFile.eof() ? false : true;
-// }
-// void JackTokenizer::advance(std::string&) {
-// 	this->inputFile.getline();
-// }
-void JackTokenizer::run() {
+void JackTokenizer::showTokenList() {
+  int i = 0;
+  for (const auto &token : this->tokenList) {
+    for (const auto &mapa : *token) {
+      std::cout << "i:" << i << "--> " << mapa.first << "\n";
+      i++;
+    }
+  }
+}
 
+bool JackTokenizer::isTokenSymbol(const char &character) {
+  return character == ' ' || character == '{' || character == '}' ||
+         character == '(' || character == ')' || character == '[' ||
+         character == ']' || character == '.' || character == ',' ||
+         character == ';' || character == '+' || character == '-' ||
+         character == '*' || character == '/' || character == '&' ||
+         character == '|' || character == '<' || character == '>' ||
+         character == '=' || character == '~';
+}
+
+void JackTokenizer::run() {
   std::string currentLine;
   std::string token;
   /*Logic*/
   for (; std::getline(this->inputFile, currentLine);) {
     for (const auto &character : currentLine) {
       if (character == ' ') {
-        this->appendTokenToTokenList();
-        // this->getTokenType(&character);
+        if (token.length() < 1) {
+          continue;
+        }
+        this->appendTokenToTokenList(token);
         token.clear();
-      } else if (character == '{' || character == '}' || character == '(' ||
-                 character == ')' || character == '[' || character == ']' ||
-                 character == '.' || character == ',' || character == ';' ||
-                 character == '+' || character == '-' || character == '*' ||
-                 character == '/' || character == '&' || character == '|' ||
-                 character == '<' || character == '>' || character == '=' ||
-                 character == '~') {
+        continue;
+      } else if (this->isTokenSymbol(character)) {
+        if (token.length() >= 1) {
+          this->appendTokenToTokenList(token);
+          token.clear();
+        }
+        token.append(&character, 1);
+        this->appendTokenToTokenList(token);
+        token.clear();
+        continue;
       }
       token.append(&character, 1);
     }
@@ -84,6 +103,7 @@ JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
   return tokenType;
 }
 JackTokenizer::~JackTokenizer() {
+  std::cout << "removing addresses" << "\n";
   for (const auto &mapObjectPointer : this->tokenList) {
     delete mapObjectPointer;
   }
