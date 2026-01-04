@@ -23,6 +23,7 @@ void JackAnalyzer::handleFile(const std::filesystem::path &filePath) {
   std::ifstream file(filePath);
   JackTokenizer JackTokenizer = ::JackTokenizer(file);
   JackTokenizer.run();
+  JackTokenizer.showTokenList();
   return;
   /*Logic*/
 }
