@@ -47,7 +47,8 @@ public:
   int getIntVal();
   std::string getStringVal();
   void run();
-	void showTokenList();
+  void showTokenList();
+  void showTokenizerOutput();
 
 private:
   /*list of mapObjects*/
@@ -57,7 +58,8 @@ private:
 
   TokenType getTokenType(const std::string &token);
   void appendTokenToTokenList(const std::string &token);
-  bool isTokenSymbol(const char& character);
+  bool isTokenSymbol(const char &character);
+	void skipLines(std::string& currentLine);
 };
 
 #endif
