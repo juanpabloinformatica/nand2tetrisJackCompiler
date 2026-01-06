@@ -25,12 +25,29 @@ bool JackTokenizer::isTokenSymbol(const char &character) {
          character == '|' || character == '<' || character == '>' ||
          character == '=' || character == '~';
 }
+void JackTokenizer::skipLines(std::string &currentLine) {
+  while (currentLine.substr(0, 2) == "//" || currentLine == "") {
+    std::getline(this->inputFile, currentLine);
+  }
+  if (currentLine.substr(0, 2) == "/*") {
+    while (!currentLine.find("*/")) {
+      std::getline(this->inputFile, currentLine);
+    }
+    std::getline(this->inputFile, currentLine);
+  }
+}
 
 void JackTokenizer::run() {
   std::string currentLine;
   std::string token;
   /*Logic*/
+  /*To improve to do it in only one passed*/
   for (; std::getline(this->inputFile, currentLine);) {
+    /*Missing  comments style*/ /*.....*/ /*to be ignored*/
+    if (currentLine.substr(0, 2) == "/*" || currentLine.substr(0, 2) == "//" ||
+        currentLine == "") {
+      this->skipLines(currentLine);
+    }
     for (const auto &character : currentLine) {
       if (character == ' ') {
         if (token.length() < 1) {
@@ -102,8 +119,57 @@ JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
   }
   return tokenType;
 }
+void JackTokenizer::showTokenizerOutput() {
+
+  std::ofstream outputTokenizer =
+      std::ofstream("/home/jppm/Documents/projects/nand2tetris/jack_compiler/"
+                    "test/outputT.xml");
+  outputTokenizer << "<tokens>" << "\n";
+  // int i = 0;
+  for (const auto &token : this->tokenList) {
+    for (const auto &mapa : *token) {
+      switch (mapa.second) {
+      case KEYWORD:
+        outputTokenizer << " <keyword> " << mapa.first << " </keyword>" << "\n";
+        break;
+      case SYMBOL: {
+        std::string symbol = mapa.first;
+        if (mapa.first == "<")
+          symbol = "&lt;";
+        if (mapa.first == ">")
+          symbol = "&gt;";
+        if (mapa.first == "\"")
+          symbol = "quot;";
+        if (mapa.first == "&")
+          symbol = "amp;";
+
+        outputTokenizer << " <symbol> " << symbol << " </symbol>" << "\n";
+      } break;
+      case IDENTIFIER:
+        outputTokenizer << " <identifier> " << mapa.first << " </identifier>"
+                        << "\n";
+        break;
+      case INT_CONST:
+        outputTokenizer << " <integerConstant> " << mapa.first
+                        << " </integerConstant>"
+                        << "\n";
+        break;
+      case STRING_CONST:
+        outputTokenizer << " <stringConstant> " << mapa.first
+                        << " </stringConstant>"
+                        << "\n";
+        break;
+      default:
+        break;
+      }
+    }
+  }
+  outputTokenizer << "</tokens>" << "\n" << "\t";
+  outputTokenizer.close();
+}
+
 JackTokenizer::~JackTokenizer() {
-  std::cout << "removing addresses" << "\n";
+  // std::cout << "removing addresses" << "\n";
   for (const auto &mapObjectPointer : this->tokenList) {
     delete mapObjectPointer;
   }
