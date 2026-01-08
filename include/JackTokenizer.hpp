@@ -57,7 +57,7 @@ private:
   allocateMapObject(const std::string &token, const TokenType tokenType);
 
   TokenType getTokenType(const std::string &token);
-  void appendTokenToTokenList(const std::string &token);
+  void appendTokenToTokenList(std::string &token);
   bool isTokenSymbol(const char &character);
 	void skipLines(std::string& currentLine);
 };
