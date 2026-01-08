@@ -26,7 +26,8 @@ bool JackTokenizer::isTokenSymbol(const char &character) {
          character == '=' || character == '~';
 }
 void JackTokenizer::skipLines(std::string &currentLine) {
-  while (currentLine.substr(0, 2) == "//" || currentLine == "") {
+  while (currentLine.substr(0, 2) == "//" || currentLine == "" ||
+         currentLine == "\r" || currentLine == "\t") {
     std::getline(this->inputFile, currentLine);
   }
   if (currentLine.substr(0, 2) == "/*") {
@@ -43,21 +44,35 @@ void JackTokenizer::run() {
   /*Logic*/
   /*To improve to do it in only one passed*/
   for (; std::getline(this->inputFile, currentLine);) {
-    /*Missing  comments style*/ /*.....*/ /*to be ignored*/
-    if (currentLine.substr(0, 2) == "/*" || currentLine.substr(0, 2) == "//" ||
-        currentLine == "") {
-      this->skipLines(currentLine);
-    }
+    /*Ignoring comments and lines with \t \r*/
+    this->skipLines(currentLine);
+    /*ltrim*/
+    currentLine.erase(0, currentLine.find_first_not_of(" \n\t\r"));
+    /*rtrim*/
+    currentLine.erase(currentLine.find_last_not_of(" \n\t\r") + 1);
+		/*Right comments*/
+    // currentLine.erase(currentLine.find_last_of("//"));
+    // int isStringCounter = 0;
+    bool isString = false;
     for (const auto &character : currentLine) {
-      if (character == ' ') {
+      if (character == '"')
+        isString = !isString;
+
+      if (character == ' ' && !isString) {
         if (token.length() < 1) {
           continue;
         }
+        /*Remove \" */
+        // token.erase(std::remove(token.begin(), token.end(), '"'),
+        // token.end());
         this->appendTokenToTokenList(token);
         token.clear();
         continue;
-      } else if (this->isTokenSymbol(character)) {
+
+      } else if (this->isTokenSymbol(character) && !isString) {
         if (token.length() >= 1) {
+          // token.erase(std::remove(token.begin(), token.end(), '"'),
+          //             token.end());
           this->appendTokenToTokenList(token);
           token.clear();
         }
@@ -70,9 +85,14 @@ void JackTokenizer::run() {
     }
   }
 }
-void JackTokenizer::appendTokenToTokenList(const std::string &token) {
-  this->tokenList.push_back(
-      this->allocateMapObject(token, this->getTokenType(token)));
+void JackTokenizer::appendTokenToTokenList(std::string &token) {
+
+  TokenType tokenType = UNDEFINED;
+  tokenType = this->getTokenType(token);
+  if (tokenType == STRING_CONST)
+    token.erase(std::remove(token.begin(), token.end(), '"'), token.end());
+
+  this->tokenList.push_back(this->allocateMapObject(token, tokenType));
   return;
 }
 std::map<std::string, JackTokenizer::TokenType> *
@@ -130,7 +150,7 @@ void JackTokenizer::showTokenizerOutput() {
     for (const auto &mapa : *token) {
       switch (mapa.second) {
       case KEYWORD:
-        outputTokenizer << " <keyword> " << mapa.first << " </keyword>" << "\n";
+        outputTokenizer << "<keyword> " << mapa.first << " </keyword>" << "\n";
         break;
       case SYMBOL: {
         std::string symbol = mapa.first;
@@ -143,19 +163,19 @@ void JackTokenizer::showTokenizerOutput() {
         if (mapa.first == "&")
           symbol = "amp;";
 
-        outputTokenizer << " <symbol> " << symbol << " </symbol>" << "\n";
+        outputTokenizer << "<symbol> " << symbol << " </symbol>" << "\n";
       } break;
       case IDENTIFIER:
-        outputTokenizer << " <identifier> " << mapa.first << " </identifier>"
+        outputTokenizer << "<identifier> " << mapa.first << " </identifier>"
                         << "\n";
         break;
       case INT_CONST:
-        outputTokenizer << " <integerConstant> " << mapa.first
+        outputTokenizer << "<integerConstant> " << mapa.first
                         << " </integerConstant>"
                         << "\n";
         break;
       case STRING_CONST:
-        outputTokenizer << " <stringConstant> " << mapa.first
+        outputTokenizer << "<stringConstant> " << mapa.first
                         << " </stringConstant>"
                         << "\n";
         break;
@@ -164,7 +184,7 @@ void JackTokenizer::showTokenizerOutput() {
       }
     }
   }
-  outputTokenizer << "</tokens>" << "\n" << "\t";
+  outputTokenizer << "</tokens>";
   outputTokenizer.close();
 }
 
