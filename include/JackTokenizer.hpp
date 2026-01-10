@@ -59,7 +59,9 @@ private:
   TokenType getTokenType(const std::string &token);
   void appendTokenToTokenList(std::string &token);
   bool isTokenSymbol(const char &character);
-	void skipLines(std::string& currentLine);
+  void skipLines(std::string &currentLine);
+  void trimLines(std::string &currentLine);
+  void removeRightComments(std::string &currentLine);
 };
 
 #endif
