@@ -25,17 +25,30 @@ bool JackTokenizer::isTokenSymbol(const char &character) {
          character == '|' || character == '<' || character == '>' ||
          character == '=' || character == '~';
 }
+/*This should know when reached EOF*/
 void JackTokenizer::skipLines(std::string &currentLine) {
-  while (currentLine.substr(0, 2) == "//" || currentLine == "" ||
-         currentLine == "\r" || currentLine == "\t") {
+  while ((currentLine.substr(0, 2) == "//" || currentLine == "" ||
+          currentLine == "\r" || currentLine == "\t") &&
+         !this->inputFile.eof()) {
     std::getline(this->inputFile, currentLine);
   }
-  if (currentLine.substr(0, 2) == "/*") {
-    while (!currentLine.find("*/")) {
+
+  if (std::regex_search(currentLine, std::regex(R"(\s*\/\*.*\n?)"))) {
+    while (currentLine.find("*/") == std::string::npos) {
       std::getline(this->inputFile, currentLine);
     }
     std::getline(this->inputFile, currentLine);
   }
+}
+
+void JackTokenizer::trimLines(std::string &currentLine) {
+  /*ltrim*/
+  currentLine.erase(0, currentLine.find_first_not_of(" \n\t\r"));
+  /*rtrim*/
+  currentLine.erase(currentLine.find_last_not_of(" //\n\t\r") + 1);
+}
+void JackTokenizer::removeRightComments(std::string &currentLine) {
+  currentLine.erase(currentLine.find_last_of("//") - 1);
 }
 
 void JackTokenizer::run() {
@@ -46,13 +59,11 @@ void JackTokenizer::run() {
   for (; std::getline(this->inputFile, currentLine);) {
     /*Ignoring comments and lines with \t \r*/
     this->skipLines(currentLine);
-    /*ltrim*/
-    currentLine.erase(0, currentLine.find_first_not_of(" \n\t\r"));
-    /*rtrim*/
-    currentLine.erase(currentLine.find_last_not_of(" \n\t\r") + 1);
-		/*Right comments*/
-    // currentLine.erase(currentLine.find_last_of("//"));
-    // int isStringCounter = 0;
+    this->trimLines(currentLine);
+
+    if (currentLine.find("//") != std::string::npos)
+      this->removeRightComments(currentLine);
+
     bool isString = false;
     for (const auto &character : currentLine) {
       if (character == '"')
@@ -62,17 +73,12 @@ void JackTokenizer::run() {
         if (token.length() < 1) {
           continue;
         }
-        /*Remove \" */
-        // token.erase(std::remove(token.begin(), token.end(), '"'),
-        // token.end());
         this->appendTokenToTokenList(token);
         token.clear();
         continue;
 
       } else if (this->isTokenSymbol(character) && !isString) {
         if (token.length() >= 1) {
-          // token.erase(std::remove(token.begin(), token.end(), '"'),
-          //             token.end());
           this->appendTokenToTokenList(token);
           token.clear();
         }
@@ -141,9 +147,11 @@ JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
 }
 void JackTokenizer::showTokenizerOutput() {
 
-  std::ofstream outputTokenizer =
-      std::ofstream("/home/jppm/Documents/projects/nand2tetris/jack_compiler/"
-                    "test/outputT.xml");
+  std::string outputFilename =
+      std::string("/home/jppm/Documents/projects/nand2tetris/jack_compiler/"
+                  "test/outputT.xml");
+  std::ofstream outputTokenizer = std::ofstream(outputFilename);
+
   outputTokenizer << "<tokens>" << "\n";
   // int i = 0;
   for (const auto &token : this->tokenList) {
@@ -161,7 +169,7 @@ void JackTokenizer::showTokenizerOutput() {
         if (mapa.first == "\"")
           symbol = "quot;";
         if (mapa.first == "&")
-          symbol = "amp;";
+          symbol = "&amp;";
 
         outputTokenizer << "<symbol> " << symbol << " </symbol>" << "\n";
       } break;
