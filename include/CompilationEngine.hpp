@@ -17,15 +17,15 @@ public:
   ~CompilationEngine();
   const std::vector<std::map<std::string, JackTypes::TokenType> *> &
   getTokenList();
-  std::ifstream &getOutputFile();
+  std::ofstream &getOutputFile();
   void run();
 
 private:
   std::ofstream outputFile;
   const std::vector<std::map<std::string, JackTypes::TokenType> *> tokenList;
   int tokenListIndex;
-  inline std::string tokenListKey(int tokenListIndex);
-  inline JackTypes::TokenType tokenListValue(int tokenListIndex);
+  inline std::string tokenListKey();
+  inline JackTypes::TokenType tokenListValue();
   void compileClass();
   void compileClassVarDec();
   void compileSubroutine();
@@ -40,6 +40,8 @@ private:
   void compileExpression();
   void compileTerm();
   void compileExpressionList();
+  /*When terminal reached this method will be called*/
+  void writeToFile();
 };
 
 #endif
