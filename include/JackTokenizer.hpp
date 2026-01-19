@@ -1,47 +1,18 @@
 #ifndef __TOKENIZER__
 #define __TOKENIZER__
+#include "Types.hpp"
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <string>
 #include <vector>
 class JackTokenizer {
 public:
-  std::ifstream &inputFile;
-  JackTokenizer(std::ifstream &inputFile);
+  std::ifstream inputFile;
+  JackTokenizer(const std::filesystem::path &inputFilePath);
   ~JackTokenizer();
-  enum TokenType {
-    UNDEFINED = -1,
-    KEYWORD,
-    SYMBOL,
-    IDENTIFIER,
-    INT_CONST,
-    STRING_CONST,
-  };
-  std::vector<std::map<std::string, TokenType> *> tokenList;
-  enum Keyword {
-    CLASS,
-    METHOD,
-    FUNCTION,
-    CONSTRUCTOR,
-    INT,
-    BOOLEAN,
-    CHAR,
-    VOID,
-    VAR,
-    STATIC,
-    FIELD,
-    LET,
-    DO,
-    IF,
-    ELSE,
-    WHILE,
-    RETURN,
-    TRUE,
-    FLASE,
-    _NULL,
-    THIS
-  };
-  Keyword getKeyword();
+  std::vector<std::map<std::string, JackTypes::TokenType> *> tokenList;
+  JackTypes::Keyword getKeyword();
   char getSymbol();
   std::string getIdentifier();
   int getIntVal();
@@ -50,13 +21,17 @@ public:
   void showTokenList();
   void showTokenizerOutput();
 
+  const std::vector<std::map<std::string, JackTypes::TokenType> *> &
+  getTokenList();
+
 private:
   /*list of mapObjects*/
   /*This list needs to be traverse and deallocate each map object pointer*/
-  std::map<std::string, TokenType> *
-  allocateMapObject(const std::string &token, const TokenType tokenType);
+  std::map<std::string, JackTypes::TokenType> *
+  allocateMapObject(const std::string &token,
+                    const JackTypes::TokenType tokenType);
 
-  TokenType getTokenType(const std::string &token);
+  JackTypes::TokenType getTokenType(const std::string &token);
   void appendTokenToTokenList(std::string &token);
   bool isTokenSymbol(const char &character);
   void skipLines(std::string &currentLine);

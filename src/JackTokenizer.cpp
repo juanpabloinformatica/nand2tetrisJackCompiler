@@ -2,8 +2,14 @@
 #include <algorithm>
 #include <iostream>
 #include <regex>
-JackTokenizer::JackTokenizer(std::ifstream &inputFile) : inputFile(inputFile) {
-  this->tokenList = std::vector<std::map<std::string, TokenType> *>();
+#include <string>
+JackTokenizer::JackTokenizer(const std::filesystem::path &inputFilePath)
+    : inputFile(inputFilePath) {
+  this->tokenList =
+      std::vector<std::map<std::string, JackTypes::TokenType> *>();
+
+  std::cout << "address in tokenizer" << std::endl;
+  std::cout << std::addressof(this->tokenList) << std::endl;
 }
 
 void JackTokenizer::showTokenList() {
@@ -93,26 +99,26 @@ void JackTokenizer::run() {
 }
 void JackTokenizer::appendTokenToTokenList(std::string &token) {
 
-  TokenType tokenType = UNDEFINED;
+  JackTypes::TokenType tokenType = JackTypes::UNDEFINED;
   tokenType = this->getTokenType(token);
-  if (tokenType == STRING_CONST)
+  if (tokenType == JackTypes::STRING_CONST)
     token.erase(std::remove(token.begin(), token.end(), '"'), token.end());
 
   this->tokenList.push_back(this->allocateMapObject(token, tokenType));
   return;
 }
-std::map<std::string, JackTokenizer::TokenType> *
+std::map<std::string, JackTypes::TokenType> *
 JackTokenizer::allocateMapObject(const std::string &token,
-                                 const TokenType tokenType) {
+                                 const JackTypes::TokenType tokenType) {
 
-  std::map<std::string, JackTokenizer::TokenType> *newObject =
-      new std::map<std::string, JackTokenizer::TokenType>();
+  std::map<std::string, JackTypes::TokenType> *newObject =
+      new std::map<std::string, JackTypes::TokenType>();
   newObject->insert({token, tokenType});
   return newObject;
 }
 
-JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
-  TokenType tokenType;
+JackTypes::TokenType JackTokenizer::getTokenType(const std::string &token) {
+  JackTypes::TokenType tokenType;
   if (token.compare("class") == 0 || token.compare("constructor") == 0 ||
       token.compare("function") == 0 || token.compare("method") == 0 ||
       token.compare("field") == 0 || token.compare("static") == 0 ||
@@ -124,7 +130,7 @@ JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
       token.compare("do") == 0 || token.compare("if") == 0 ||
       token.compare("else") == 0 || token.compare("while") == 0 ||
       token.compare("return") == 0) {
-    tokenType = KEYWORD;
+    tokenType = JackTypes::KEYWORD;
   } else if (token.at(0) == '{' || token.at(0) == '}' || token.at(0) == '(' ||
              token.at(0) == ')' || token.at(0) == '[' || token.at(0) == ']' ||
              token.at(0) == '.' || token.at(0) == ',' || token.at(0) == ';' ||
@@ -132,16 +138,16 @@ JackTokenizer::TokenType JackTokenizer::getTokenType(const std::string &token) {
              token.at(0) == '/' || token.at(0) == '&' || token.at(0) == '|' ||
              token.at(0) == '<' || token.at(0) == '>' || token.at(0) == '=' ||
              token.at(0) == '~') {
-    tokenType = SYMBOL;
+    tokenType = JackTypes::SYMBOL;
     /*check more idiomatic stuff such as this*/
   } else if (std::all_of(token.begin(), token.end(), ::isdigit)) {
-    tokenType = INT_CONST;
+    tokenType = JackTypes::INT_CONST;
   } else if (token.at(0) == '"' && token.at(token.length() - 1) == '"') {
-    tokenType = STRING_CONST;
+    tokenType = JackTypes::STRING_CONST;
   } else if (!std::regex_match(token, std::regex(R"(^[0-9].*)"))) {
-    tokenType = IDENTIFIER;
+    tokenType = JackTypes::IDENTIFIER;
   } else {
-    tokenType = UNDEFINED;
+    tokenType = JackTypes::UNDEFINED;
   }
   return tokenType;
 }
@@ -157,10 +163,10 @@ void JackTokenizer::showTokenizerOutput() {
   for (const auto &token : this->tokenList) {
     for (const auto &mapa : *token) {
       switch (mapa.second) {
-      case KEYWORD:
+      case JackTypes::KEYWORD:
         outputTokenizer << "<keyword> " << mapa.first << " </keyword>" << "\n";
         break;
-      case SYMBOL: {
+      case JackTypes::SYMBOL: {
         std::string symbol = mapa.first;
         if (mapa.first == "<")
           symbol = "&lt;";
@@ -173,16 +179,16 @@ void JackTokenizer::showTokenizerOutput() {
 
         outputTokenizer << "<symbol> " << symbol << " </symbol>" << "\n";
       } break;
-      case IDENTIFIER:
+      case JackTypes::IDENTIFIER:
         outputTokenizer << "<identifier> " << mapa.first << " </identifier>"
                         << "\n";
         break;
-      case INT_CONST:
+      case JackTypes::INT_CONST:
         outputTokenizer << "<integerConstant> " << mapa.first
                         << " </integerConstant>"
                         << "\n";
         break;
-      case STRING_CONST:
+      case JackTypes::STRING_CONST:
         outputTokenizer << "<stringConstant> " << mapa.first
                         << " </stringConstant>"
                         << "\n";
@@ -196,6 +202,10 @@ void JackTokenizer::showTokenizerOutput() {
   outputTokenizer.close();
 }
 
+const std::vector<std::map<std::string, JackTypes::TokenType> *> &
+JackTokenizer::getTokenList() {
+  return this->tokenList;
+}
 JackTokenizer::~JackTokenizer() {
   // std::cout << "removing addresses" << "\n";
   for (const auto &mapObjectPointer : this->tokenList) {
