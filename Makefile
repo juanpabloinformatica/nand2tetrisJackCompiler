@@ -2,7 +2,7 @@
 #make VERBOSE=y all &>make_output.txt
 #compiledb --parse make_output.txt
 
-.PHONY: all
+.PHONY: all clean
 
 CXXFLAGS := -g -std=c++17 -Werror -Wall
 CXX := g++
@@ -38,3 +38,5 @@ ${build_dir}/${src_dir}/%.cpp.o: ${src_dir}/%.cpp
 			$(CXX) $(CXXFLAGS) -c $< -o $@
 
 
+clean:
+	rm -rf ./build

@@ -1,4 +1,7 @@
 #include "JackAnalyzer.hpp"
+#include "CompilationEngine.hpp"
+#include <cassert>
+#include <cstdio>
 JackAnalyzer::JackAnalyzer(const std::string &filepath)
     : sourcePath(filepath) {}
 
@@ -21,10 +24,14 @@ void JackAnalyzer::handleFolder(const std::filesystem::path &folderFolder) {
       this->handleFile(dirEntry.path());
   }
 }
+
 void JackAnalyzer::handleFile(const std::filesystem::path &filePath) {
-  std::ifstream file(filePath);
-  JackTokenizer jackTokenizer = JackTokenizer(file);
+
+  JackTokenizer jackTokenizer = JackTokenizer(filePath);
   jackTokenizer.run();
+  CompilationEngine compilationEngine =
+      CompilationEngine(jackTokenizer.getTokenList());
+  compilationEngine.run();
   return;
 }
 
