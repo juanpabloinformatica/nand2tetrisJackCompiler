@@ -39,6 +39,7 @@ ${build_dir}/${src_dir}/%.cpp.o: ${src_dir}/%.cpp
 		mkdir -p ${@D}
 			$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) -c $< -o $@
 
+-include $(deps)
 
 clean:
 	rm -rf ./build
