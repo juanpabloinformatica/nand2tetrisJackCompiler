@@ -204,6 +204,64 @@ void JackTokenizer::showTokenizerOutput() {
 
 const std::vector<std::map<std::string, JackTypes::TokenType> *> &
 JackTokenizer::getTokenList() {
+#ifdef DEBUG
+  /*test_1*/
+  /*i * (-j)*/
+  // std::string t1 = std::string("i");
+  // std::string t2 = std::string("*");
+  // std::string t3 = std::string("(");
+  // std::string t4 = std::string("-");
+  // std::string t5 = std::string("j");
+  // std::string t6 = std::string(")");
+  // this->appendTokenToTokenList(t1);
+  // this->appendTokenToTokenList(t2);
+  // this->appendTokenToTokenList(t3);
+  // this->appendTokenToTokenList(t4);
+  // this->appendTokenToTokenList(t5);
+  // this->appendTokenToTokenList(t6);
+  /*test_2*/
+  /*SquareGame.new()*/
+  // std::string t21 = std::string("SquareGame");
+  // std::string t22 = std::string(".");
+  // std::string t23 = std::string("new");
+  // std::string t24 = std::string("(");
+  // std::string t25 = std::string(")");
+  // this->appendTokenToTokenList(t21);
+  // this->appendTokenToTokenList(t22);
+  // this->appendTokenToTokenList(t23);
+  // this->appendTokenToTokenList(t24);
+  // this->appendTokenToTokenList(t25);
+  /*test_2*/
+  /*SquareGame.new()*/
+  /*For testing*/
+  /* test_3*/
+  /*"string constant"*/
+  std::string t31 = std::string("\"string constant\"");
+  this->appendTokenToTokenList(t31);
+  /* test_4*/
+  /*null*/
+  std::string t41 = std::string("null");
+  this->appendTokenToTokenList(t41);
+  /* test_5*/
+  /*a[2]*/
+  std::string t51 = std::string("a");
+  std::string t52 = std::string("[");
+  std::string t53 = std::string("2");
+  std::string t54 = std::string("]");
+  this->appendTokenToTokenList(t51);
+  this->appendTokenToTokenList(t52);
+  this->appendTokenToTokenList(t53);
+  this->appendTokenToTokenList(t54);
+  /*
+null
+
+a[2]
+i * (-j)
+j / (-2)
+i | j;
+*/
+
+#endif
   return this->tokenList;
 }
 JackTokenizer::~JackTokenizer() {

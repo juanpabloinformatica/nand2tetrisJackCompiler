@@ -23,6 +23,8 @@ $(info ${deps})
 
 CXXFLAGS += $(addprefix -I,${include_dir})
 CXXFLAGS += -MMD -MP
+#DEBUGFLAGS:= -DDEBUG
+
 
 all: target
 
@@ -35,7 +37,7 @@ ${build_dir}/${executable}: ${srcs_objs}
 ${build_dir}/${src_dir}/%.cpp.o: ${src_dir}/%.cpp
 		$(info par ici)
 		mkdir -p ${@D}
-			$(CXX) $(CXXFLAGS) -c $< -o $@
+			$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) -c $< -o $@
 
 
 clean:

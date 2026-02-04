@@ -13,8 +13,29 @@ inline JackTypes::TokenType CompilationEngine::tokenListValue() {
  * way then I will see*/
 CompilationEngine::CompilationEngine(
     const std::vector<std::map<std::string, JackTypes::TokenType> *> &tokenList)
+#ifdef DEBUG
+    /*:outputFile(std::string("./test/output_test_1.xml")),*/  /*test_1*/
+    /*: outputFile(std::string("./test/output_test_2.xml")),*/ /*test_2*/
+    /*: outputFile(std::string("./test/output_test_3.xml")),*/ /*test_3*/
+    /*: outputFile(std::string("./test/output_test_4.xml")),*/ /*test_4*/
+    : outputFile(std::string("./test/output_test_5.xml")),     /*test_5*/
+#else
     : outputFile(std::string("./test/output_compilation.xml")),
-      tokenList(tokenList), tokenListIndex(0) {}
+#endif
+
+      tokenList(tokenList),
+#ifdef DEBUG
+      /*tokenListIndex(tokenList.size() - 6)*/ /*For test_1*/
+      /*tokenListIndex(tokenList.size() - 6)*/ /*For test_2*/
+      /*tokenListIndex(tokenList.size() - 1)*/ /*For test_3*/
+      /*tokenListIndex(tokenList.size() - 1)*/ /*For test_4*/
+      tokenListIndex(tokenList.size() - 4)     /*For test_5*/
+
+#else
+      tokenListIndex(0),
+#endif
+      flagIsDoStatement(false) {
+}
 
 void CompilationEngine::run() {
   this->outputFile << "<tokens>" << "\n";
