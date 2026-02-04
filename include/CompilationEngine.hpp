@@ -24,24 +24,31 @@ private:
   std::ofstream outputFile;
   const std::vector<std::map<std::string, JackTypes::TokenType> *> tokenList;
   int tokenListIndex;
-  inline std::string tokenListKey();
-  inline JackTypes::TokenType tokenListValue();
+	int flagIsDoStatement;
+  inline std::string tokenListKey(int offset = 0);
+  inline JackTypes::TokenType tokenListValue(int offset = 0);
   void compileClass();
-  void compileClassVarDec();
-  void compileSubroutine();
+  bool compileClassVarDec();
+  bool compileSubroutine();
+	bool compileSubroutineBody();
+  bool _compileSubroutineCall();
   void compileParameterList();
-  void compileVarDec();
-  void compileStatements();
-  void compileDo();
-  void compileLet();
-  void compileWhile();
-  void compileReturn();
-  void compileIf();
-  void compileExpression();
-  void compileTerm();
+  bool compileVarDec();
+  bool compileStatements();
+  bool compileDo();
+  bool compileLet();
+  bool compileWhile();
+  bool compileReturn();
+  bool compileIf();
+  bool compileExpression();
+
+  void compileTerm(int *iteration, bool *succesfull);
   void compileExpressionList();
+  // bool tokenIsOp();
   /*When terminal reached this method will be called*/
   void writeToFile();
+  void writeToFileStartNonTerminal(const std::string &nonTerminal);
+  void writeToFileFinishNonTerminal(const std::string &nonTerminal);
 };
 
 #endif
