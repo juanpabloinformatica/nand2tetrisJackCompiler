@@ -13,7 +13,8 @@ inline JackTypes::TokenType CompilationEngine::tokenListValue(int offset) {
 /*and then let the compilation takes cares, nevertheless I will continue this
  * way then I will see*/
 CompilationEngine::CompilationEngine(
-    const std::vector<std::map<std::string, JackTypes::TokenType> *> &tokenList)
+    const std::vector<std::map<std::string, JackTypes::TokenType> *> &tokenList,
+    const std::string &outputFilePath)
 #ifdef DEBUG
     /*:outputFile(std::string("./test/output_test_1.xml")),*/  /*test_1*/
     /*: outputFile(std::string("./test/output_test_2.xml")),*/ /*test_2*/
@@ -21,7 +22,7 @@ CompilationEngine::CompilationEngine(
     /*: outputFile(std::string("./test/output_test_4.xml")),*/ /*test_4*/
     : outputFile(std::string("./test/output_test_5.xml")),     /*test_5*/
 #else
-    : outputFile(std::string("./test/output_compilation.xml")),
+    : outputFile(outputFilePath),
 #endif
 
       tokenList(tokenList),
@@ -131,9 +132,6 @@ void CompilationEngine::compileClass() {
 }
 bool CompilationEngine::compileClassVarDec() {
 
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
-
   if (!(this->tokenListKey() == "static" || this->tokenListKey() == "field"))
     return false;
 
@@ -171,21 +169,11 @@ bool CompilationEngine::compileClassVarDec() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // this->writeToFileStartNonTerminal("<classVarDec>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  // this->writeToFile();
-
   this->writeToFileFinishNonTerminal("</classVarDec>");
 
   return true;
 }
 bool CompilationEngine::compileSubroutine() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "constructor" ||
         this->tokenListKey() == "function" || this->tokenListKey() == "method"))
@@ -217,7 +205,9 @@ bool CompilationEngine::compileSubroutine() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  //  this->flagIsDoStatement = false;
   this->compileParameterList();
+  //  this->flagIsDoStatement = true;
 
   if (!(this->tokenListKey() == ")"))
     return false;
@@ -229,31 +219,7 @@ bool CompilationEngine::compileSubroutine() {
   /*subroutine body*/
   if (!this->compileSubroutineBody())
     return false;
-  // this->writeToFileStartNonTerminal("<subroutineBody>");
-  // if (!(this->tokenListKey() == "{"))
-  //   return false;
-  // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // while (this->compileVarDec())
-  //   ;
-  //
-  // this->compileStatements();
-  //
-  // if (!(this->tokenListKey() == "}"))
-  //   return false;
-  // this->writeToFile();
-  // this->tokenListIndex++;
 
-  // this->writeToFileFinishNonTerminal("</subroutineBody>");
-
-  // this->writeToFileStartNonTerminal("<subroutineDec>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  // this->writeToFile();
   this->writeToFileFinishNonTerminal("</subroutineDec>");
 
   return true;
@@ -289,8 +255,6 @@ bool CompilationEngine::compileStatements() {
   return true;
 }
 bool CompilationEngine::compileLet() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "let"))
     return false;
@@ -309,10 +273,17 @@ bool CompilationEngine::compileLet() {
 
     this->writeToFile();
     this->tokenListIndex++;
+
+    //    this->flagIsDoStatement = false;
+
     if (!this->compileExpression()) /*this->compileExpression();*/
       return false;
+
+    //    this->flagIsDoStatement = true;
+
     if (!(this->tokenListKey() == "]"))
       return false;
+
     this->writeToFile();
     this->tokenListIndex++;
   }
@@ -322,8 +293,11 @@ bool CompilationEngine::compileLet() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  //// this->flagIsDoStatement = false;
+
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
+  //// this->flagIsDoStatem/* en */t = true;
 
   if (!(this->tokenListKey() == ";"))
     return false;
@@ -331,22 +305,12 @@ bool CompilationEngine::compileLet() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // this->writeToFileFinishNonTerminal("<letStatement>");
-
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   writeToFile();
   this->writeToFileFinishNonTerminal("</letStatement>");
 
   return true;
 }
 
 bool CompilationEngine::compileIf() {
-  // this->writeToFileFinishNonTerminal("<ifStatement>");
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "if"))
     return false;
@@ -361,8 +325,10 @@ bool CompilationEngine::compileIf() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  //  this->flagIsDoStatement = false;
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
+  //  this->flagIsDoStatement = true;
 
   if (!(this->tokenListKey() == ")"))
     return false;
@@ -400,23 +366,11 @@ bool CompilationEngine::compileIf() {
     this->writeToFile();
     this->tokenListIndex++;
   }
-  // this->writeToFileFinishNonTerminal("<ifStatement>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
-  //
   this->writeToFileFinishNonTerminal("</ifStatement>");
 
-  // ////this->writeToFileFinishNonTerminal("</ifStatement>");
   return true;
 }
 bool CompilationEngine::compileWhile() {
-
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "while"))
     return false;
@@ -431,16 +385,26 @@ bool CompilationEngine::compileWhile() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  //  this->flagIsDoStatement = false;
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
+  //  this->flagIsDoStatement = true;
+
+  if (!(this->tokenListKey() == ")"))
+    return false;
+
+  this->writeToFile();
+  this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "{"))
     return false;
   this->writeToFile();
   this->tokenListIndex++;
 
+  // this->flagIsDoStatement = false;
   if (!this->compileStatements()) /*this->compileStatements();*/
     return false;
+  //  this->flagIsDoStatement = true;
 
   if (!(this->tokenListKey() == "}"))
     return false;
@@ -448,21 +412,10 @@ bool CompilationEngine::compileWhile() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // this->writeToFileFinishNonTerminal("<whileStatement>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</whileStatement>");
   return true;
 }
 bool CompilationEngine::compileDo() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
-
-  // this->writeToFileFinishNonTerminal("<doStatement>");
 
   if (!(this->tokenListKey() == "do"))
     return false;
@@ -471,6 +424,12 @@ bool CompilationEngine::compileDo() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  // int iteration = 0;
+  // bool succesfull = true;
+  // std::cout << "HEREEE" << "\n";
+  // this->compileTerm(&iteration, &succesfull);
+  // if (!succesfull)
+  // return false;
   this->flagIsDoStatement = true;
   if (!this->compileExpression())
     return false;
@@ -482,77 +441,10 @@ bool CompilationEngine::compileDo() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // if (!(this->tokenListKey() == "("))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // this->compileExpressionList();
-  //
-  // if (!(this->tokenListKey() == ")"))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  //
-  // /*This is not well done because the compiler doesn't know if is a class
-  // name
-  //  * or subroutine everything*/
-  // /*is threated as identfier*/
-  // if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  // //
-  // if (!(this->tokenListKey() == "."))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // if (!(this->tokenListKey() == "("))
-  //   return false;
-  //
-  // // this->writeToFile();
-  // this->tokenListIndex++;
-  //
-  // this->compileExpressionList();
-  //
-  // if (!(this->tokenListKey() == ")"))
-  //   return false;
-  //
-  // // this->writeToFile();
-  //
-  // this->tokenListIndex++;
-
-  // this->writeToFileFinishNonTerminal("<doStatement>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</doStatement>");
   return true;
 }
 bool CompilationEngine::compileReturn() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "return"))
     return false;
@@ -560,10 +452,11 @@ bool CompilationEngine::compileReturn() {
   this->writeToFileFinishNonTerminal("<returnStatement>");
   this->writeToFile();
   this->tokenListIndex++;
-  this->flagIsDoStatement = true;
+
+  //  this->flagIsDoStatement = false;
   if (!this->compileExpression())
     return false;
-  this->flagIsDoStatement = false;
+  //  this->flagIsDoStatement = true;
 
   if (!(this->tokenListKey() == ";"))
     return false;
@@ -571,24 +464,15 @@ bool CompilationEngine::compileReturn() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // this->writeToFileFinishNonTerminal("<returnStatement>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</returnStatement>");
   return true;
 }
 
 void CompilationEngine::compileParameterList() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
-  this->writeToFileFinishNonTerminal("<parameterList>");
   /*Check there are no parameters*/
   if (this->tokenListKey() == ")") {
+    this->writeToFileStartNonTerminal("<parameterList>");
     this->writeToFileFinishNonTerminal("</parameterList>");
     return;
   }
@@ -598,7 +482,7 @@ void CompilationEngine::compileParameterList() {
         this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
 
-  this->writeToFileFinishNonTerminal("<parameterList>");
+  this->writeToFileStartNonTerminal("<parameterList>");
   this->writeToFile();
   this->tokenListIndex++;
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
@@ -606,27 +490,29 @@ void CompilationEngine::compileParameterList() {
 
   this->writeToFile();
   this->tokenListIndex++;
+
   while ((this->tokenListKey() == ",") &&
+         (this->tokenListKey(1) == "int" || this->tokenListKey(1) == "char" ||
+          this->tokenListKey(1) == "boolean" ||
+          this->tokenListValue(1) == JackTypes::IDENTIFIER) &&
          /*offset */
-         (this->tokenListValue(1) == JackTypes::IDENTIFIER)) {
+         (this->tokenListValue(2) == JackTypes::IDENTIFIER)) {
+    this->writeToFile();
+    this->tokenListIndex++;
     this->writeToFile();
     this->tokenListIndex++;
     this->writeToFile();
     this->tokenListIndex++;
   }
-  // this->writeToFileStartNonTerminal("<parameterList>");
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</parameterList>");
 
   return;
 }
 bool CompilationEngine::compileExpression() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
+  /*if expression is empty*/
+  if (this->tokenListKey() == ";")
+    return true;
+
   int iteration = 0;
   bool succesfull = true;
 
@@ -634,7 +520,6 @@ bool CompilationEngine::compileExpression() {
     this->writeToFileStartNonTerminal("<expression>");
 
   /*for be working just now*/
-  // this->tokenListIndex++;
   this->compileTerm(&iteration, &succesfull);
   if (!succesfull)
     return false;
@@ -643,13 +528,15 @@ bool CompilationEngine::compileExpression() {
   succesfull = true;
 
   /*not like this because I need to update the index*/
-  // while (this->isOp() && this->compileTerm())
-  //   ;
   while (true) {
-
     if ((size_t)this->tokenListIndex > this->tokenList.size() - 1)
       break;
 
+    if (this->tokenListKey() == "-") {
+      std::cout << "IN COMPILE_EXPRESSION:\t" << "\n";
+      std::cout << "PREVIOUS TOKEN:\t" << this->tokenListKey(-1) << "\n";
+      std::cout << "NEXT TOKEN:\t" << this->tokenListKey(+1) << "\n";
+    }
     if (!JackTypes::tokenIsOp(this->tokenListKey()))
       break;
 
@@ -659,26 +546,19 @@ bool CompilationEngine::compileExpression() {
     if (!succesfull)
       return false;
   }
-  // /*Code to be written*/
-  // this->writeToFileStartNonTerminal("<expression>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
-  if (!this->flagIsDoStatement)
+  if (!this->flagIsDoStatement) {
     this->writeToFileFinishNonTerminal("</expression>");
+    // this->flagIsDoStatement = false; /*Hard to understand*/
+  }
 
   return true;
 }
-// wrapper of this one
-// testing with  i*(-j)
-// I will unit-test this function
 void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
 
   /*this will be the same */
   /*never theless the tokenListIndex will be incremented because is global*/
+
+  // int localIteration = *iteration;
 
   if ((size_t)this->tokenListIndex > this->tokenList.size() - 1) {
     return;
@@ -688,18 +568,21 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
   if (JackTypes::INT_CONST == this->tokenListValue() ||
       JackTypes::STRING_CONST == this->tokenListValue() ||
       JackTypes::KEYWORD == this->tokenListValue()) {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
 
   if (this->tokenListValue() == JackTypes::IDENTIFIER &&
       this->tokenListKey(1) == "[") {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     this->tokenListIndex++;
     if (this->tokenListKey() == "[") {
@@ -717,20 +600,23 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
       this->writeToFile();
       this->tokenListIndex++;
       this->compileTerm(iteration, succesfull);
-      this->writeToFileFinishNonTerminal("</term>");
+      if (!this->flagIsDoStatement)
+        this->writeToFileFinishNonTerminal("</term>");
       return;
     }
   }
   if ((this->tokenListValue() == JackTypes::IDENTIFIER &&
        this->tokenListKey(1) == "(")) {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     if (!this->_compileSubroutineCall()) {
       *succesfull = false;
       return;
     }
     *iteration += 1;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if ((this->tokenListValue() == JackTypes::IDENTIFIER &&
@@ -752,16 +638,19 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
     return;
   }
   if (this->tokenListValue() == JackTypes::IDENTIFIER) {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if (this->tokenListKey() == "(") {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     this->tokenListIndex++;
     if (!this->compileExpression()) {
@@ -769,7 +658,6 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
       return;
     }
     if (!(this->tokenListKey() == ")")) {
-
       *succesfull = false;
       return;
     }
@@ -777,26 +665,34 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
     this->writeToFile();
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
-  if (JackTypes::tokenIsUnaryOp(this->tokenListKey())) {
-    this->writeToFileStartNonTerminal("<term>");
+  if (JackTypes::tokenIsUnaryOp(this->tokenListKey()) && *iteration == 0) {
+    std::cout << "ITERATION:\t" << *iteration << "\n";
+    std::cout << "PREVIOUS TOKEN:\t" << this->tokenListKey(-1) << "\n";
+    std::cout << "NEXT TOKEN:\t" << this->tokenListKey(+1) << "\n";
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
 
   if (JackTypes::tokenIsKeywordConstant(this->tokenListKey())) {
-    this->writeToFileStartNonTerminal("<term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    this->writeToFileFinishNonTerminal("</term>");
+    if (!this->flagIsDoStatement)
+      this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   return;
@@ -817,7 +713,11 @@ bool CompilationEngine::_compileSubroutineCall() {
   this->writeToFile();
   this->tokenListIndex++;
 
+  bool old_state_flag = this->flagIsDoStatement;
+
+  this->flagIsDoStatement = false;
   this->compileExpressionList();
+  this->flagIsDoStatement = old_state_flag;
 
   if (!(this->tokenListKey() == ")"))
     return false;
@@ -828,8 +728,6 @@ bool CompilationEngine::_compileSubroutineCall() {
 }
 
 bool CompilationEngine::compileVarDec() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
 
   if (!(this->tokenListKey() == "var"))
     return false;
@@ -867,20 +765,11 @@ bool CompilationEngine::compileVarDec() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // this->writeToFileStartNonTerminal("<varDec>");
-
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</varDec>");
 
   return true;
 }
 void CompilationEngine::compileExpressionList() {
-  // int tmpBeforeIndex = this->tokenListIndex;
-  // int tmpAfterIndex;
   this->writeToFileStartNonTerminal("<expressionList>");
   if (this->tokenListKey() == ")") {
     this->writeToFileFinishNonTerminal("</expressionList>");
@@ -890,23 +779,17 @@ void CompilationEngine::compileExpressionList() {
   /*code*/
   if (!this->compileExpression())
     return;
-  //
 
   while (true) {
     if (!(this->tokenListKey() == ","))
       break;
+    this->writeToFile();
     this->tokenListIndex++;
+    // this->flagIsDoStatement = false;
     if (!this->compileExpression())
       break;
   }
 
-  // this->writeToFileStartNonTerminal("<expressionList>");
-  //
-  // tmpAfterIndex = this->tokenListIndex;
-  // this->tokenListIndex = tmpBeforeIndex;
-  // /*Check that is not writting one more*/
-  // for (; this->tokenListIndex < tmpAfterIndex; this->tokenListIndex++)
-  //   this->writeToFile();
   this->writeToFileFinishNonTerminal("</expressionList>");
 
   return;

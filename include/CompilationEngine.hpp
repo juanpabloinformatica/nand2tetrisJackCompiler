@@ -11,7 +11,8 @@ class CompilationEngine {
 public:
   CompilationEngine(
       const std::vector<std::map<std::string, JackTypes::TokenType> *>
-          &tokenList);
+          &tokenList,
+      const std::string &outputFilePath);
 
   /*Not extended*/
   ~CompilationEngine();
@@ -24,13 +25,13 @@ private:
   std::ofstream outputFile;
   const std::vector<std::map<std::string, JackTypes::TokenType> *> tokenList;
   int tokenListIndex;
-	int flagIsDoStatement;
+  int flagIsDoStatement;
   inline std::string tokenListKey(int offset = 0);
   inline JackTypes::TokenType tokenListValue(int offset = 0);
   void compileClass();
   bool compileClassVarDec();
   bool compileSubroutine();
-	bool compileSubroutineBody();
+  bool compileSubroutineBody();
   bool _compileSubroutineCall();
   void compileParameterList();
   bool compileVarDec();
