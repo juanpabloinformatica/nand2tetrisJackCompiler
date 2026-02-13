@@ -2,8 +2,9 @@
 #include "CompilationEngine.hpp"
 #include <cassert>
 #include <cstdio>
-JackAnalyzer::JackAnalyzer(const std::string &filepath)
-    : sourcePath(filepath) {}
+JackAnalyzer::JackAnalyzer(const std::string &filepath,
+                           const std::string &outputFilePath)
+    : sourcePath(filepath), outputFilePath(outputFilePath) {}
 
 void JackAnalyzer::run() {
 
@@ -30,7 +31,7 @@ void JackAnalyzer::handleFile(const std::filesystem::path &filePath) {
   JackTokenizer jackTokenizer = JackTokenizer(filePath);
   jackTokenizer.run();
   CompilationEngine compilationEngine =
-      CompilationEngine(jackTokenizer.getTokenList());
+      CompilationEngine(jackTokenizer.getTokenList(), this->outputFilePath);
   compilationEngine.run();
   return;
 }
