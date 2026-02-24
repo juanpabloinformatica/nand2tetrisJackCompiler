@@ -13,8 +13,8 @@ inline JackTypes::TokenType CompilationEngine::tokenListValue(int offset) {
 /*and then let the compilation takes cares, nevertheless I will continue this
  * way then I will see*/
 CompilationEngine::CompilationEngine(
-    const std::vector<std::map<std::string, JackTypes::TokenType> *> &tokenList,
-    const std::string &outputFilePath)
+    const std::vector<std::map<std::string, JackTypes::TokenType>*>& tokenList,
+    const std::string& outputFilePath)
 #ifdef DEBUG
     /*:outputFile(std::string("./test/output_test_1.xml")),*/  /*test_1*/
     /*: outputFile(std::string("./test/output_test_2.xml")),*/ /*test_2*/
@@ -36,7 +36,8 @@ CompilationEngine::CompilationEngine(
 #else
       tokenListIndex(0),
 #endif
-      flagIsDoStatement(false) {
+      flagIsDoStatement(false),
+      classSymbolTable(SymbolTable()), subroutineSymbolTable(SymbolTable()) {
 }
 
 void CompilationEngine::run() {
@@ -48,18 +49,18 @@ void CompilationEngine::run() {
 }
 
 void CompilationEngine::writeToFileStartNonTerminal(
-    const std::string &nonTerminal) {
+    const std::string& nonTerminal) {
   this->outputFile << "\t" << nonTerminal << "\n";
   return;
 }
 void CompilationEngine::writeToFileFinishNonTerminal(
-    const std::string &nonTerminal) {
+    const std::string& nonTerminal) {
   this->outputFile << nonTerminal << "\n";
   return;
 }
 void CompilationEngine::writeToFile() {
   JackTypes::TokenType tokenType = this->tokenListValue();
-  const std::string &token = this->tokenListKey();
+  const std::string& token = this->tokenListKey();
 
   /*identation*/
   this->outputFile << "\t";
@@ -109,6 +110,8 @@ void CompilationEngine::compileClass() {
   this->tokenListIndex++;
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
+  /*This should be the class name i will need later*/
+  this->currentClass = this->tokenListKey();
   this->writeToFile();
   this->tokenListIndex++;
   if (!(this->tokenListKey() == "{"))
@@ -135,21 +138,37 @@ bool CompilationEngine::compileClassVarDec() {
   if (!(this->tokenListKey() == "static" || this->tokenListKey() == "field"))
     return false;
 
+  /*Needed for the created variable sin the while loop*/
+  std::string kind = this->tokenListKey();
+
+  this->classSymbolTable.setSymbol(this->classSymbolTable.allocateSymbol());
+
   this->writeToFileStartNonTerminal("<classVarDec>");
 
+  this->classSymbolTable.getSymbol()->setKind(this->tokenListKey());
   this->writeToFile();
   this->tokenListIndex++;
+
+  /* this-classSymbolTable.allocatedSymbol();*/
+  /*this->classSymbolTable.addSymbol()*/
 
   if (!(this->tokenListKey() == "int" || this->tokenListKey() == "char" ||
         this->tokenListKey() == "boolean" ||
         this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
+  /*Needed for the created variable sin the while loop*/
+  std::string type = this->tokenListKey();
+  this->classSymbolTable.getSymbol()->setType(this->tokenListKey());
   this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
+
+  this->classSymbolTable.getSymbol()->setName(this->tokenListKey());
+  this->classSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+  this->classSymbolTable.setSymbol(nullptr);
 
   this->writeToFile();
   this->tokenListIndex++;
@@ -158,6 +177,18 @@ bool CompilationEngine::compileClassVarDec() {
          /*offset */
          (this->tokenListValue(1) == JackTypes::IDENTIFIER)) {
 
+    /*Improve this maybe*/
+    this->classSymbolTable.setSymbol(this->classSymbolTable.allocateSymbol());
+    this->classSymbolTable.getSymbol()->setKind(kind);
+    this->classSymbolTable.getSymbol()->setType(type);
+    this->classSymbolTable.getSymbol()->setName(this->tokenListKey(1));
+    this->classSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+    this->classSymbolTable.setSymbol(nullptr);
+    /*
+     * this-classSymbolTable.allocateSymbol();
+     * this->classSymbolTable.addSymbol();
+     *
+     * */
     this->writeToFile();
     this->tokenListIndex++;
     this->writeToFile();
@@ -424,12 +455,6 @@ bool CompilationEngine::compileDo() {
   this->writeToFile();
   this->tokenListIndex++;
 
-  // int iteration = 0;
-  // bool succesfull = true;
-  // std::cout << "HEREEE" << "\n";
-  // this->compileTerm(&iteration, &succesfull);
-  // if (!succesfull)
-  // return false;
   this->flagIsDoStatement = true;
   if (!this->compileExpression())
     return false;
@@ -482,12 +507,22 @@ void CompilationEngine::compileParameterList() {
         this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
 
+  this->subroutineSymbolTable.setSymbol(
+      this->subroutineSymbolTable.allocateSymbol());
+  /*Improve this*/
+  this->subroutineSymbolTable.getSymbol()->setKind("argument");
+
   this->writeToFileStartNonTerminal("<parameterList>");
+
+  this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey());
   this->writeToFile();
   this->tokenListIndex++;
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
 
+  this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey());
+  this->subroutineSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+  this->subroutineSymbolTable.setSymbol(nullptr);
   this->writeToFile();
   this->tokenListIndex++;
 
@@ -497,6 +532,16 @@ void CompilationEngine::compileParameterList() {
           this->tokenListValue(1) == JackTypes::IDENTIFIER) &&
          /*offset */
          (this->tokenListValue(2) == JackTypes::IDENTIFIER)) {
+
+    this->subroutineSymbolTable.setSymbol(
+        this->subroutineSymbolTable.allocateSymbol());
+    this->subroutineSymbolTable.getSymbol()->setKind("argument");
+    this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey(1));
+    this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey(2));
+    this->subroutineSymbolTable.addSymbol(
+        this->subroutineSymbolTable.getSymbol());
+    this->subroutineSymbolTable.setSymbol(nullptr);
+
     this->writeToFile();
     this->tokenListIndex++;
     this->writeToFile();
@@ -532,11 +577,6 @@ bool CompilationEngine::compileExpression() {
     if ((size_t)this->tokenListIndex > this->tokenList.size() - 1)
       break;
 
-    if (this->tokenListKey() == "-") {
-      std::cout << "IN COMPILE_EXPRESSION:\t" << "\n";
-      std::cout << "PREVIOUS TOKEN:\t" << this->tokenListKey(-1) << "\n";
-      std::cout << "NEXT TOKEN:\t" << this->tokenListKey(+1) << "\n";
-    }
     if (!JackTypes::tokenIsOp(this->tokenListKey()))
       break;
 
@@ -553,7 +593,7 @@ bool CompilationEngine::compileExpression() {
 
   return true;
 }
-void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
+void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
 
   /*this will be the same */
   /*never theless the tokenListIndex will be incremented because is global*/
@@ -670,9 +710,6 @@ void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
     return;
   }
   if (JackTypes::tokenIsUnaryOp(this->tokenListKey()) && *iteration == 0) {
-    std::cout << "ITERATION:\t" << *iteration << "\n";
-    std::cout << "PREVIOUS TOKEN:\t" << this->tokenListKey(-1) << "\n";
-    std::cout << "NEXT TOKEN:\t" << this->tokenListKey(+1) << "\n";
     if (!this->flagIsDoStatement)
       this->writeToFileStartNonTerminal("<term>");
     this->writeToFile();
@@ -729,10 +766,17 @@ bool CompilationEngine::_compileSubroutineCall() {
 
 bool CompilationEngine::compileVarDec() {
 
+  /*Kind is always var?*/
   if (!(this->tokenListKey() == "var"))
     return false;
 
+  this->subroutineSymbolTable.setSymbol(
+      this->subroutineSymbolTable.allocateSymbol());
+
   this->writeToFileFinishNonTerminal("<varDec>");
+
+  std::string kind = this->tokenListKey();
+  this->subroutineSymbolTable.getSymbol()->setKind(this->tokenListKey());
   this->writeToFile();
   this->tokenListIndex++;
 
@@ -741,11 +785,30 @@ bool CompilationEngine::compileVarDec() {
         this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
+  std::string type = this->tokenListKey();
+
+  /*Adding this in method (arg0)*/
+
+  this->subroutineSymbolTable.getSymbol()->setKind("argument");
+  this->subroutineSymbolTable.getSymbol()->setType(this->currentClass);
+  this->subroutineSymbolTable.getSymbol()->setName("this");
+  this->subroutineSymbolTable.addSymbol(
+      this->subroutineSymbolTable.getSymbol());
+  this->subroutineSymbolTable.setSymbol(nullptr);
+
+  this->subroutineSymbolTable.setSymbol(
+      this->subroutineSymbolTable.allocateSymbol());
+  this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey());
   this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
+
+  this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey());
+  this->subroutineSymbolTable.addSymbol(
+      this->subroutineSymbolTable.getSymbol());
+  this->subroutineSymbolTable.setSymbol(nullptr);
 
   this->writeToFile();
   this->tokenListIndex++;
@@ -753,6 +816,16 @@ bool CompilationEngine::compileVarDec() {
   while ((this->tokenListKey() == ",") &&
          /*offset */
          (this->tokenListValue(1) == JackTypes::IDENTIFIER)) {
+
+    this->subroutineSymbolTable.setSymbol(
+        this->subroutineSymbolTable.allocateSymbol());
+    this->subroutineSymbolTable.getSymbol()->setKind(kind);
+    this->subroutineSymbolTable.getSymbol()->setType(type);
+    this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey(1));
+    this->subroutineSymbolTable.addSymbol(
+        this->subroutineSymbolTable.getSymbol());
+    this->subroutineSymbolTable.setSymbol(nullptr);
+
     this->writeToFile();
     this->tokenListIndex++;
     this->writeToFile();
@@ -764,6 +837,8 @@ bool CompilationEngine::compileVarDec() {
 
   this->writeToFile();
   this->tokenListIndex++;
+
+  this->subroutineSymbolTable.resetSymbolTable();
 
   this->writeToFileFinishNonTerminal("</varDec>");
 
@@ -795,7 +870,7 @@ void CompilationEngine::compileExpressionList() {
   return;
 }
 
-const std::vector<std::map<std::string, JackTypes::TokenType> *> &
+const std::vector<std::map<std::string, JackTypes::TokenType>*>&
 CompilationEngine::getTokenList() {
   return this->tokenList;
 }
