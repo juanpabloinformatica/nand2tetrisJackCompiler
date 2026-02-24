@@ -29,6 +29,7 @@ private:
   int flagIsDoStatement;
   SymbolTable classSymbolTable;
   SymbolTable subroutineSymbolTable;
+  std::string currentClass;
   inline std::string tokenListKey(int offset = 0);
   inline JackTypes::TokenType tokenListValue(int offset = 0);
   void compileClass();
