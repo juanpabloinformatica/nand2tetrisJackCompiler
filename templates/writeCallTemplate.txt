@@ -1,1 +1,1 @@
-call ##className##.##functionName## ##nArgs##
+call ##functionName## ##nArgs##

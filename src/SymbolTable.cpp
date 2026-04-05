@@ -1,19 +1,35 @@
 #include "SymbolTable.hpp"
 #include "CompilationEngine.hpp"
 #include <iostream>
+#include <stdexcept>
 SymbolTable::SymbolTable()
-    : symbolTable(std::map<std::string, Symbol*>()), currentSymbol(nullptr),
-      staticSymbolCounter(-1), fieldSymbolCounter(-1),
-      argumentSymbolCounter(-1), localSymbolCounter(-1) {}
+    : symbolTable(std::map<std::string, Symbol *>()), currentSymbol(nullptr),
+      staticSymbolCounter(0), fieldSymbolCounter(0), argumentSymbolCounter(0),
+      localSymbolCounter(0) {}
 
 /*Need to be destroy in table destructor*/
-void SymbolTable::setSymbol(Symbol* symbol) { this->currentSymbol = symbol; }
-SymbolTable::Symbol* SymbolTable::getSymbol() { return this->currentSymbol; }
-SymbolTable::Symbol* SymbolTable::allocateSymbol() {
+void SymbolTable::setSymbol(Symbol *symbol) { this->currentSymbol = symbol; }
+SymbolTable::Symbol *SymbolTable::getCurrentSymbol() {
+  return this->currentSymbol;
+}
+SymbolTable::Symbol *SymbolTable::getSymbol(const std::string &symbolName) {
+  SymbolTable::Symbol *symbol;
+  try {
+    symbol = this->symbolTable.at(symbolName);
+  } catch (const std::out_of_range &oor) {
+    symbol = NULL;
+  }
+  return symbol;
+}
+const std::map<std::string, SymbolTable::Symbol *> &
+SymbolTable::getSymbolTable() {
+  return this->symbolTable;
+}
+SymbolTable::Symbol *SymbolTable::allocateSymbol() {
   return new SymbolTable::Symbol();
 }
 /*In this function I should handle the # field of the hashtable*/
-void SymbolTable::incrementSymbolCounter(const std::string& kind) {
+void SymbolTable::incrementSymbolCounter(const std::string &kind) {
   if (kind == "static")
     this->staticSymbolCounter++;
   else if (kind == "field")
@@ -24,13 +40,13 @@ void SymbolTable::incrementSymbolCounter(const std::string& kind) {
     this->localSymbolCounter++;
   return;
 }
-void SymbolTable::addSymbol(SymbolTable::Symbol* symbol) {
+void SymbolTable::addSymbol(SymbolTable::Symbol *symbol) {
   assert(symbol->name != "");
-  this->incrementSymbolCounter(symbol->kind);
   this->setSymbolPosInSegment(symbol);
+  this->incrementSymbolCounter(symbol->kind);
   this->symbolTable.insert({symbol->name, symbol});
 }
-void SymbolTable::setSymbolPosInSegment(Symbol* symbol) {
+void SymbolTable::setSymbolPosInSegment(Symbol *symbol) {
 
   std::cout << "In here" << "\n";
   if (symbol->kind == "static")
@@ -43,13 +59,17 @@ void SymbolTable::setSymbolPosInSegment(Symbol* symbol) {
     symbol->posInSegment = localSymbolCounter;
   return;
 }
-void SymbolTable::Symbol::setName(const std::string& name) {
+void SymbolTable::Symbol::setName(const std::string &name) {
   this->name = name;
 }
-void SymbolTable::Symbol::setKind(const std::string& kind) {
+void SymbolTable::Symbol::setKind(const std::string &kind) {
+  if (kind == "var") {
+    this->kind = "local";
+    return;
+  }
   this->kind = kind;
 }
-void SymbolTable::Symbol::setType(const std::string& type) {
+void SymbolTable::Symbol::setType(const std::string &type) {
   this->type = type;
 }
 
@@ -57,13 +77,15 @@ void SymbolTable::Symbol::setPosInSegment(int posInSegment) {
   this->posInSegment = posInSegment;
 }
 
+int SymbolTable::getLocalSymbolCounter() { return this->localSymbolCounter; }
+
 void SymbolTable::resetSymbolTable() {
   this->_deallocateSymbols();
   this->symbolTable.clear();
-  this->staticSymbolCounter = -1;
-  this->fieldSymbolCounter = -1;
-  this->argumentSymbolCounter = -1;
-  this->localSymbolCounter = -1;
+  this->staticSymbolCounter = 0;
+  this->fieldSymbolCounter = 0;
+  this->argumentSymbolCounter = 0;
+  this->localSymbolCounter = 0;
 }
 
 void SymbolTable::_deallocateSymbols() {

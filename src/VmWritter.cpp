@@ -2,7 +2,7 @@
 #include <regex>
 #include <string>
 
-VmWritter::VmWritter(const std::filesystem::path& outputFilePath)
+VmWritter::VmWritter(const std::filesystem::path &outputFilePath)
     : outputFile(std::ofstream(outputFilePath)),
       writePushTemplate(this->getTemplate("writePushTemplate.txt")),
       writePopTemplate(this->getTemplate("writePopTemplate.txt")),
@@ -14,14 +14,14 @@ VmWritter::VmWritter(const std::filesystem::path& outputFilePath)
       writeFunctionTemplate(this->getTemplate("writeFunctionTemplate.txt")),
       writeReturnTemplate(this->getTemplate("writeReturnTemplate.txt")) {}
 
-void VmWritter::PatternMgr::addPattern(const std::string& pattern,
-                                       const std::string& replacement) {
+void VmWritter::PatternMgr::addPattern(const std::string &pattern,
+                                       const std::string &replacement) {
 
   this->patternMap[pattern] = replacement;
   this->patternInsertionTrack.push_back(pattern);
 }
 
-void VmWritter::writePush(const std::string& virtualSegment,
+void VmWritter::writePush(const std::string &virtualSegment,
                           int virtualSegmentIndex) {
   PatternMgr patternMgr = PatternMgr();
 
@@ -38,7 +38,7 @@ void VmWritter::writePush(const std::string& virtualSegment,
 
   this->outputFile << writePushTemplateInstance << "\n";
 }
-void VmWritter::writePop(const std::string& virtualSegment,
+void VmWritter::writePop(const std::string &virtualSegment,
                          int virtualSegmentIndex) {
   PatternMgr patternMgr = PatternMgr();
 
@@ -55,13 +55,42 @@ void VmWritter::writePop(const std::string& virtualSegment,
 
   this->outputFile << writePopTemplateInstance << "\n";
 }
-void VmWritter::writeArithmetic(const std::string& command) {
+void VmWritter::writeArithmetic(const std::string &command) {
 
   PatternMgr patternMgr = PatternMgr();
 
   std::string commandRegex = R"(\#\#command\#\#)";
+  std::string arithmeticAsm;
 
-  patternMgr.addPattern(commandRegex, command);
+  if (command == "+")
+    arithmeticAsm = "add";
+  else if (command == "-")
+    arithmeticAsm = "sub";
+  /* This needs to be know by the codeWritter to modify the argument*/
+  else if (command == "--")
+    arithmeticAsm = "neg";
+  else if (command == "&")
+    arithmeticAsm = "and";
+  else if (command == "or")
+    arithmeticAsm = "|";
+  else if (command == "~")
+    arithmeticAsm = "not";
+  else if (command == ">")
+    arithmeticAsm = "gt";
+  else if (command == "<")
+    arithmeticAsm = "lt";
+  else if (command == "=")
+    arithmeticAsm = "eq";
+  else if (command == "*") {
+    this->outputFile << "call Math.multiply 2" << "\n";
+    return;
+  } else if (command == "/") {
+    this->outputFile << "call Math.divide 2" << "\n";
+    return;
+  } else
+    arithmeticAsm = command;
+
+  patternMgr.addPattern(commandRegex, arithmeticAsm);
 
   std::string writeArithmeticTemplateInstance = this->writeArithmeticTemplate;
 
@@ -70,7 +99,7 @@ void VmWritter::writeArithmetic(const std::string& command) {
 
   this->outputFile << writeArithmeticTemplateInstance << "\n";
 }
-void VmWritter::writeLabel(const std::string& label) {
+void VmWritter::writeLabel(const std::string &label) {
 
   PatternMgr patternMgr = PatternMgr();
 
@@ -85,7 +114,7 @@ void VmWritter::writeLabel(const std::string& label) {
 
   this->outputFile << writeLabelTemplateInstance << "\n";
 }
-void VmWritter::writeGoto(const std::string& label) {
+void VmWritter::writeGoto(const std::string &label) {
 
   PatternMgr patternMgr = PatternMgr();
 
@@ -99,7 +128,7 @@ void VmWritter::writeGoto(const std::string& label) {
 
   this->outputFile << writeGotoTemplateInstance << "\n";
 }
-void VmWritter::writeIf(const std::string& label) {
+void VmWritter::writeIf(const std::string &label) {
 
   PatternMgr patternMgr = PatternMgr();
 
@@ -113,15 +142,14 @@ void VmWritter::writeIf(const std::string& label) {
 
   this->outputFile << writeIfTemplateInstance << "\n";
 }
-void VmWritter::writeCall(const std::string& className, const std::string& name,
-                          int nArgs) {
+void VmWritter::writeCall(const std::string &name, int nArgs) {
   PatternMgr patternMgr = PatternMgr();
 
-  std::string classNameRegex = R"(\#\#className\#\#)";
+  // std::string classNameRegex = R"(\#\#className\#\#)";
   std::string functionNameRegex = R"(\#\#functionName\#\#)";
   std::string nArgsRegex = R"(\#\#nArgs\#\#)";
 
-  patternMgr.addPattern(classNameRegex, className);
+  // patternMgr.addPattern(classNameRegex, className);
   patternMgr.addPattern(functionNameRegex, name);
   patternMgr.addPattern(nArgsRegex, std::to_string(nArgs));
 
@@ -131,8 +159,8 @@ void VmWritter::writeCall(const std::string& className, const std::string& name,
 
   this->outputFile << writeCallTemplateInstance << "\n";
 }
-void VmWritter::writeFunction(const std::string& className,
-                              const std::string& name, int nLocals) {
+void VmWritter::writeFunction(const std::string &className,
+                              const std::string &name, int nLocals) {
   PatternMgr patternMgr = PatternMgr();
 
   std::string classNameRegex = R"(\#\#className\#\#)";
@@ -154,8 +182,8 @@ void VmWritter::writeReturn(void) {
   this->outputFile << this->writeReturnTemplate << "\n";
 }
 
-void VmWritter::transformInstanceTemplate(PatternMgr& patternMgr,
-                                          std::string& assemblyTemplate,
+void VmWritter::transformInstanceTemplate(PatternMgr &patternMgr,
+                                          std::string &assemblyTemplate,
                                           bool firstOnly) {
   for (auto element : patternMgr.patternInsertionTrack) {
     assemblyTemplate =
@@ -166,7 +194,7 @@ void VmWritter::transformInstanceTemplate(PatternMgr& patternMgr,
                                        patternMgr.patternMap[element]);
   }
 }
-std::string VmWritter::getTemplate(const std::string& writeTemplate) {
+std::string VmWritter::getTemplate(const std::string &writeTemplate) {
   std::filesystem::path cwd = std::filesystem::current_path();
   std::filesystem::path filepath =
 
