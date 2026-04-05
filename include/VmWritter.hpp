@@ -6,16 +6,17 @@
 #include <vector>
 class VmWritter {
 public:
-  VmWritter(const std::filesystem::path& outputFilePath);
-  void writePush(const std::string& virtualSegment, int virtualSegmentIndex);
-  void writePop(const std::string& virtualSegment, int virtualSegmentIndex);
-  void writeArithmetic(const std::string& command);
-  void writeLabel(const std::string& label);
-  void writeGoto(const std::string& label);
-  void writeIf(const std::string& label);
-  void writeCall(const std::string& className, const std::string& name,
-                 int nArgs);
-  void writeFunction(const std::string& className, const std::string& name,
+  VmWritter(const std::filesystem::path &outputFilePath);
+  void writePush(const std::string &virtualSegment, int virtualSegmentIndex);
+  void writePop(const std::string &virtualSegment, int virtualSegmentIndex);
+  void writeArithmetic(const std::string &command);
+  void writeLabel(const std::string &label);
+  void writeGoto(const std::string &label);
+  void writeIf(const std::string &label);
+  // void writeCall(const std::string& className, const std::string& name,
+  //                int nArgs);
+  void writeCall(const std::string &name, int nArgs);
+  void writeFunction(const std::string &className, const std::string &name,
                      int nLocals);
   void writeReturn(void);
   ~VmWritter();
@@ -31,14 +32,14 @@ private:
   std::string writeCallTemplate;
   std::string writeFunctionTemplate;
   std::string writeReturnTemplate;
-  std::string getTemplate(const std::string& writeTemplate);
+  std::string getTemplate(const std::string &writeTemplate);
   class PatternMgr {
   public:
     std::map<std::string, std::string> patternMap;
     std::vector<std::string> patternInsertionTrack;
-    void addPattern(const std::string& pattern, const std::string& replacement);
+    void addPattern(const std::string &pattern, const std::string &replacement);
   };
-  void transformInstanceTemplate(PatternMgr& patternMgr,
-                                 std::string& assemblyTemplate, bool firstOnly);
+  void transformInstanceTemplate(PatternMgr &patternMgr,
+                                 std::string &assemblyTemplate, bool firstOnly);
 };
 #endif

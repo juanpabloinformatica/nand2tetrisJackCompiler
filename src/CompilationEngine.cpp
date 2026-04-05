@@ -1,5 +1,13 @@
 #include "CompilationEngine.hpp"
+#include "SymbolTable.hpp"
+#include "Types.hpp"
+#include "VmWritter.hpp"
 #include <cassert>
+#include <cstddef>
+#include <ios>
+#include <regex>
+#include <sstream>
+#include <string>
 
 inline std::string CompilationEngine::tokenListKey(int offset) {
   return this->tokenList.at(this->tokenListIndex + offset)->begin()->first;
@@ -13,108 +21,123 @@ inline JackTypes::TokenType CompilationEngine::tokenListValue(int offset) {
 /*and then let the compilation takes cares, nevertheless I will continue this
  * way then I will see*/
 CompilationEngine::CompilationEngine(
-    const std::vector<std::map<std::string, JackTypes::TokenType>*>& tokenList,
-    const std::string& outputFilePath)
+    const std::vector<std::map<std::string, JackTypes::TokenType> *> &tokenList,
+    const std::string &outputFilePath)
+    :
 #ifdef DEBUG
-    /*:outputFile(std::string("./test/output_test_1.xml")),*/  /*test_1*/
-    /*: outputFile(std::string("./test/output_test_2.xml")),*/ /*test_2*/
-    /*: outputFile(std::string("./test/output_test_3.xml")),*/ /*test_3*/
-    /*: outputFile(std::string("./test/output_test_4.xml")),*/ /*test_4*/
-    : outputFile(std::string("./test/output_test_5.xml")),     /*test_5*/
+/*:outputFile(std::string("./test/output_test_1.xml")),*/  /*test_1*/
+/*: outputFile(std::string("./test/output_test_2.xml")),*/ /*test_2*/
+/*: outputFile(std::string("./test/output_test_3.xml")),*/ /*test_3*/
+/*: outputFile(std::string("./test/output_test_4.xml")),*/ /*test_4*/
+/*: outputFile(outputFilePath),*/                          /*test_5*/
 #else
-    : outputFile(outputFilePath),
 #endif
-
       tokenList(tokenList),
 #ifdef DEBUG
       /*tokenListIndex(tokenList.size() - 6)*/ /*For test_1*/
       /*tokenListIndex(tokenList.size() - 6)*/ /*For test_2*/
       /*tokenListIndex(tokenList.size() - 1)*/ /*For test_3*/
       /*tokenListIndex(tokenList.size() - 1)*/ /*For test_4*/
-      tokenListIndex(tokenList.size() - 4)     /*For test_5*/
+      tokenListIndex(tokenList.size() - 4),    /*For test_5*/
 
 #else
       tokenListIndex(0),
 #endif
-      flagIsDoStatement(false),
-      classSymbolTable(SymbolTable()), subroutineSymbolTable(SymbolTable()) {
+      flagIsDoStatement(false), classSymbolTable(SymbolTable()),
+      subroutineSymbolTable(SymbolTable()),
+      vmWritter(VmWritter(outputFilePath)), labelCounter(0) {
 }
 
 void CompilationEngine::run() {
 #ifndef DEBUG
   this->compileClass();
 #else
-  this->compileExpression();
+  // this->compileExpression();
+  /*TEST with
+   * x + g(2,y,-z)*5
+   * a + b * c
+   * x + y -2
+   * foo(x,y+1,-7)
+   * */
+  std::string test = "x+g(2,y,-z)*5";
+  this->_codeWrite(test);
 #endif
 }
 
-void CompilationEngine::writeToFileStartNonTerminal(
-    const std::string& nonTerminal) {
-  this->outputFile << "\t" << nonTerminal << "\n";
-  return;
-}
-void CompilationEngine::writeToFileFinishNonTerminal(
-    const std::string& nonTerminal) {
-  this->outputFile << nonTerminal << "\n";
-  return;
-}
-void CompilationEngine::writeToFile() {
-  JackTypes::TokenType tokenType = this->tokenListValue();
-  const std::string& token = this->tokenListKey();
-
-  /*identation*/
-  this->outputFile << "\t";
-
-  switch (tokenType) {
-  case JackTypes::KEYWORD:
-    this->outputFile << "<keyword> " << token << " </keyword>" << "\n";
-    break;
-  case JackTypes::SYMBOL: {
-    std::string symbol = token;
-    if (token == "<")
-      symbol = "&lt;";
-    if (token == ">")
-      symbol = "&gt;";
-    if (token == "\"")
-      symbol = "quot;";
-    if (token == "&")
-      symbol = "&amp;";
-
-    this->outputFile << "<symbol> " << symbol << " </symbol>" << "\n";
-  } break;
-  case JackTypes::IDENTIFIER:
-    this->outputFile << "<identifier> " << token << " </identifier>"
-                     << "\n";
-    break;
-  case JackTypes::INT_CONST:
-    this->outputFile << "<integerConstant> " << token << " </integerConstant>"
-                     << "\n";
-    break;
-  case JackTypes::STRING_CONST:
-    this->outputFile << "<stringConstant> " << token << " </stringConstant>"
-                     << "\n";
-    break;
-  default:
-    break;
-  }
-}
+// void CompilationEngine::writeToFileStartNonTerminal(
+//     const std::string &nonTerminal) {
+//   this->outputFile << "\t" << nonTerminal << "\n";
+//   return;
+// }
+// void CompilationEngine::writeToFileFinishNonTerminal(
+//     const std::string &nonTerminal) {
+//   this->outputFile << nonTerminal << "\n";
+//   return;
+// }
+void CompilationEngine::writeToFile() { return; }
+// void CompilationEngine::writeToFile() {
+//   JackTypes::TokenType tokenType = this->tokenListValue();
+//   const std::string &token = this->tokenListKey();
+//
+//   /*identation*/
+//   this->outputFile << "\t";
+//
+//   switch (tokenType) {
+//   case JackTypes::KEYWORD:
+//     this->outputFile << "<keyword> " << token << " </keyword>" << "\n";
+//     break;
+//   case JackTypes::SYMBOL: {
+//     std::string symbol = token;
+//     if (token == "<")
+//       symbol = "&lt;";
+//     if (token == ">")
+//       symbol = "&gt;";
+//     if (token == "\"")
+//       symbol = "quot;";
+//     if (token == "&")
+//       symbol = "&amp;";
+//
+//     this->outputFile << "<symbol> " << symbol << " </symbol>" << "\n";
+//   } break;
+//   case JackTypes::IDENTIFIER:
+//     this->outputFile << "<identifier> " << token << " </identifier>"
+//                      << "\n";
+//     break;
+//   case JackTypes::INT_CONST:
+//     this->outputFile << "<integerConstant> " << token << "
+//     </integerConstant>"
+//                      << "\n";
+//     break;
+//   case JackTypes::STRING_CONST:
+//     this->outputFile << "<stringConstant> " << token << " </stringConstant>"
+//                      << "\n";
+//     break;
+//   default:
+//     break;
+//   }
+// }
 
 /*Do a kind of wrapper of the following*/
 void CompilationEngine::compileClass() {
   /*to improve this*/
-  this->writeToFileStartNonTerminal("<class>");
+  // this->writeToFileStartNonTerminal("<class>");
 
   if (!(this->tokenListKey() == "class"))
     return;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
+
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
-  this->writeToFile();
+
+  /*This should be the class name i will need later*/
+  this->currentClass = this->tokenListKey();
+
+  // this->writeToFile();
   this->tokenListIndex++;
   if (!(this->tokenListKey() == "{"))
     return;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   while (this->compileClassVarDec())
@@ -125,10 +148,10 @@ void CompilationEngine::compileClass() {
 
   if (!(this->tokenListKey() == "}"))
     return;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</class>");
+  // this->writeToFileFinishNonTerminal("</class>");
   return;
 }
 bool CompilationEngine::compileClassVarDec() {
@@ -141,10 +164,10 @@ bool CompilationEngine::compileClassVarDec() {
 
   this->classSymbolTable.setSymbol(this->classSymbolTable.allocateSymbol());
 
-  this->writeToFileStartNonTerminal("<classVarDec>");
+  // this->writeToFileStartNonTerminal("<classVarDec>");
 
-  this->classSymbolTable.getSymbol()->setKind(this->tokenListKey());
-  this->writeToFile();
+  this->classSymbolTable.getCurrentSymbol()->setKind(this->tokenListKey());
+  // this->writeToFile();
   this->tokenListIndex++;
 
   /* this-classSymbolTable.allocatedSymbol();*/
@@ -157,18 +180,18 @@ bool CompilationEngine::compileClassVarDec() {
 
   /*Needed for the created variable sin the while loop*/
   std::string type = this->tokenListKey();
-  this->classSymbolTable.getSymbol()->setType(this->tokenListKey());
-  this->writeToFile();
+  this->classSymbolTable.getCurrentSymbol()->setType(this->tokenListKey());
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
-  this->classSymbolTable.getSymbol()->setName(this->tokenListKey());
-  this->classSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+  this->classSymbolTable.getCurrentSymbol()->setName(this->tokenListKey());
+  this->classSymbolTable.addSymbol(this->classSymbolTable.getCurrentSymbol());
   this->classSymbolTable.setSymbol(nullptr);
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   while ((this->tokenListKey() == ",") &&
@@ -177,28 +200,28 @@ bool CompilationEngine::compileClassVarDec() {
 
     /*Improve this maybe*/
     this->classSymbolTable.setSymbol(this->classSymbolTable.allocateSymbol());
-    this->classSymbolTable.getSymbol()->setKind(kind);
-    this->classSymbolTable.getSymbol()->setType(type);
-    this->classSymbolTable.getSymbol()->setName(this->tokenListKey(1));
-    this->classSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+    this->classSymbolTable.getCurrentSymbol()->setKind(kind);
+    this->classSymbolTable.getCurrentSymbol()->setType(type);
+    this->classSymbolTable.getCurrentSymbol()->setName(this->tokenListKey(1));
+    this->classSymbolTable.addSymbol(this->classSymbolTable.getCurrentSymbol());
     this->classSymbolTable.setSymbol(nullptr);
     /*
      * this-classSymbolTable.allocateSymbol();
      * this->classSymbolTable.addSymbol();
      *
      * */
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
   }
   if (!(this->tokenListKey() == ";"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</classVarDec>");
+  // this->writeToFileFinishNonTerminal("</classVarDec>");
 
   return true;
 }
@@ -208,9 +231,9 @@ bool CompilationEngine::compileSubroutine() {
         this->tokenListKey() == "function" || this->tokenListKey() == "method"))
     return false;
 
-  this->writeToFileStartNonTerminal("<subroutineDec>");
+  // this->writeToFileStartNonTerminal("<subroutineDec>");
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "void" || this->tokenListKey() == "int" ||
@@ -219,29 +242,38 @@ bool CompilationEngine::compileSubroutine() {
 
     return false;
 
-  this->writeToFile();
   this->tokenListIndex++;
 
   /*subroutine name*/
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
-  this->writeToFile();
+  this->currentSubroutine = this->tokenListKey();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "("))
     return false;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   //  this->flagIsDoStatement = false;
-  this->compileParameterList();
+
+  /*putting function but I don't know if is correct*/
+
+  /*For getting number of params*/
+  int nArgsCounter = 0;
+  this->compileParameterList(&nArgsCounter);
+
+  // this->vmWritter.writeFunction(
+  //     this->currentClass, subroutineName,
+  //     this->subroutineSymbolTable.getLocalSymbolCounter());
   //  this->flagIsDoStatement = true;
 
   if (!(this->tokenListKey() == ")"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   /*This needs to be in another function*/
@@ -249,7 +281,18 @@ bool CompilationEngine::compileSubroutine() {
   if (!this->compileSubroutineBody())
     return false;
 
-  this->writeToFileFinishNonTerminal("</subroutineDec>");
+  // this->vmWritter.writeFunction(
+  //     this->currentClass, subroutineName,
+  //     this->subroutineSymbolTable.getLocalSymbolCounter());
+
+  /*Then I will put more order*/
+
+  // this->writeToFileFinishNonTerminal("</subroutineDec>");
+
+  // this->vmWritter.writeFunction(this->currentClass, subroutineName,
+  //                               nArgsCounter);
+  /*this->vmWritter.rese*/
+  this->subroutineSymbolTable.resetSymbolTable();
 
   return true;
 }
@@ -258,29 +301,32 @@ bool CompilationEngine::compileSubroutineBody() {
   if (!(this->tokenListKey() == "{"))
     return false;
 
-  this->writeToFileStartNonTerminal("<subroutineBody>");
-  this->writeToFile();
+  // this->writeToFileStartNonTerminal("<subroutineBody>");
+  // this->writeToFile();
   this->tokenListIndex++;
 
   while (this->compileVarDec())
     ;
 
+  /*for correct symboltable*/
+  this->vmWritter.writeFunction(
+      this->currentClass, this->currentSubroutine,
+      this->subroutineSymbolTable.getLocalSymbolCounter());
+
   this->compileStatements();
 
   if (!(this->tokenListKey() == "}"))
     return false;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
-  this->writeToFileFinishNonTerminal("</subroutineBody>");
+  // this->writeToFileFinishNonTerminal("</subroutineBody>");
 
   return true;
 }
 bool CompilationEngine::compileStatements() {
-  this->writeToFileFinishNonTerminal("<statements>");
   while (this->compileLet() || this->compileIf() || this->compileWhile() ||
          this->compileDo() || this->compileReturn())
     ;
-  this->writeToFileFinishNonTerminal("</statements>");
   return true;
 }
 bool CompilationEngine::compileLet() {
@@ -288,53 +334,89 @@ bool CompilationEngine::compileLet() {
   if (!(this->tokenListKey() == "let"))
     return false;
 
-  this->writeToFileFinishNonTerminal("<letStatement>");
-  this->writeToFile();
   this->tokenListIndex++;
+
+  /*Now we are placed in the variable name*/
+  std::string expressionVariable = this->tokenListKey();
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (this->tokenListKey() == "[") {
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
 
     //    this->flagIsDoStatement = false;
 
+    int startExpressionIndex = this->tokenListIndex;
+
     if (!this->compileExpression()) /*this->compileExpression();*/
       return false;
+
+    /*Just to test something*/
+    std::string expression = "";
+    for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+      expression.append(this->tokenList.at(i)->begin()->first);
+
+    std::cout << expression << "\n";
+    /*When to put this is something I will figure it out after*/
+    if (expression == "true")
+      expression = "-1";
+    if (expression == "false")
+      expression = "0";
+
+    this->_codeWrite(expression);
 
     //    this->flagIsDoStatement = true;
 
     if (!(this->tokenListKey() == "]"))
       return false;
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
   }
+
   if (!(this->tokenListKey() == "="))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  //// this->flagIsDoStatement = false;
+  int startExpressionIndex = this->tokenListIndex;
 
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
-  //// this->flagIsDoStatem/* en */t = true;
+
+  /*Just to test something*/
+  std::string expression = "";
+  for (int i = startExpressionIndex; i < this->tokenListIndex; i++) {
+    expression.append(this->tokenList.at(i)->begin()->first);
+  }
+
+  std::cout << expression << "\n";
+  /*When to put this is something I will figure it out after*/
+  if (expression == "true")
+    expression = "-1";
+  if (expression == "false")
+    expression = "0";
+
+  this->_codeWrite(expression);
 
   if (!(this->tokenListKey() == ";"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</letStatement>");
+  /*Adding pop for the passed variable*/
+  SymbolTable::Symbol *symbol = this->_getSymbol(expressionVariable);
+  this->vmWritter.writePop(symbol->kind, symbol->posInSegment);
+
+  // this->writeToFileFinishNonTerminal("</letStatement>");
 
   return true;
 }
@@ -344,59 +426,123 @@ bool CompilationEngine::compileIf() {
   if (!(this->tokenListKey() == "if"))
     return false;
 
-  this->writeToFileFinishNonTerminal("<ifStatement>");
-  this->writeToFile();
+  // this->writeToFileFinishNonTerminal("<ifStatement>");
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "("))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
+  int startExpressionIndex = this->tokenListIndex;
 
   //  this->flagIsDoStatement = false;
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
   //  this->flagIsDoStatement = true;
+  //
+  /*Just to test something*/
+  std::string expression = "";
+  for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+    expression.append(this->tokenList.at(i)->begin()->first);
+
+  std::cout << expression << "\n";
+  this->_codeWrite(expression);
 
   if (!(this->tokenListKey() == ")"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "{"))
     return false;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
+  this->vmWritter.writeArithmetic("~");
+
+  // if (this->tokenListKey() != "else")
+  //   this->vmWritter.writeIf(this->currentClass + "_" +
+  //   this->currentSubroutine +
+  //                           "_" + "end_if" + "_" +
+  //                           std::to_string(this->labelCounter++));
+  /*look ahead code */
+  int isElseIf = false;
+  size_t tmpTokenListIndex;
+  for (tmpTokenListIndex = this->tokenListIndex;
+       tmpTokenListIndex < this->tokenList.size(); tmpTokenListIndex++) {
+    if (this->tokenList.at(tmpTokenListIndex)->begin()->first == "}") {
+      break;
+    }
+  }
+  (this->tokenList.at(tmpTokenListIndex + 1)->begin()->first == "else")
+      ? isElseIf = true
+      : isElseIf = false;
+
+  if (isElseIf)
+    this->vmWritter.writeIf(this->currentClass + "_" + this->currentSubroutine +
+                            "_" + "else_if" + "_" +
+                            std::to_string(this->labelCounter++));
+  else
+    this->vmWritter.writeIf(this->currentClass + "_" + this->currentSubroutine +
+                            "_" + "end_if" + "_" +
+                            std::to_string(this->labelCounter++));
+
+  /*Have memory of the iflabelCounter*/
+  int ifLabelCounter = this->labelCounter;
   if (!this->compileStatements()) /*this->compileStatements();*/
     return false;
+
+  this->labelCounter = ifLabelCounter;
+
+  /*if condition true executed extament then go out of if*/
+  this->vmWritter.writeGoto(this->currentClass + "_" + this->currentSubroutine +
+                            "_" + "end_if" + "_" +
+                            std::to_string(this->labelCounter - 1));
 
   if (!(this->tokenListKey() == "}"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
+  /*Negate condition*/
+  // this->vmWritter.writeArithmetic("~");
+  //
 
   if (this->tokenListKey() == "else") {
-    this->writeToFile();
+    // this->writeToFile();
+    /*add the label of the else*/
+    this->vmWritter.writeLabel(this->currentClass + "_" +
+                               this->currentSubroutine + "_" + "else_if" + "_" +
+                               std::to_string(this->labelCounter - 1));
+
     this->tokenListIndex++;
     if (!(this->tokenListKey() == "{"))
       return false;
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
-    if (!this->compileStatements())
+
+    int ifLabelCounter = this->labelCounter;
+    if (!this->compileStatements()) /*this->compileStatements();*/
       return false;
+
+    this->labelCounter = ifLabelCounter;
+
     if (!(this->tokenListKey() == "}"))
       return false;
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
   }
-  this->writeToFileFinishNonTerminal("</ifStatement>");
-
+  // this->writeToFileFinishNonTerminal("</ifStatement>");
+  /*Setting end label*/
+  this->vmWritter.writeLabel(this->currentClass + "_" +
+                             this->currentSubroutine + "_" + "end_if" + "_" +
+                             std::to_string(this->labelCounter - 1));
+  // this->labelCounter = 0;
   return true;
 }
 bool CompilationEngine::compileWhile() {
@@ -404,44 +550,91 @@ bool CompilationEngine::compileWhile() {
   if (!(this->tokenListKey() == "while"))
     return false;
 
-  this->writeToFileFinishNonTerminal("<whileStatement>");
-  this->writeToFile();
+  this->vmWritter.writeLabel(this->currentClass + "_" +
+                             this->currentSubroutine + "_" + "loop" + "_" +
+                             std::to_string(this->labelCounter));
+
+  // this->writeToFileFinishNonTerminal("<whileStatement>");
+  // this->writeToFile();
   this->tokenListIndex++;
+
+  /*Add label to return*/
 
   if (!(this->tokenListKey() == "("))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
+
+  int startExpressionIndex = this->tokenListIndex;
 
   //  this->flagIsDoStatement = false;
   if (!this->compileExpression()) /*this->compileExpression();*/
     return false;
   //  this->flagIsDoStatement = true;
+  //
+  /*Just to test something*/
+  std::string expression = "";
+  for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+    expression.append(this->tokenList.at(i)->begin()->first);
+
+  if (expression == "loop") {
+    std::cout << "WHILE" << "\n";
+    std::cout << expression << "\n";
+  }
+  /*When to put this is something I will figure it out after*/
+  if (expression == "true")
+    expression = "-1";
+  if (expression == "false")
+    expression = "0";
+
+  this->_codeWrite(expression);
+
+  /*negating the condition*/
+  this->vmWritter.writeArithmetic("~");
+  /*Adding if goto label */
+  this->vmWritter.writeIf(this->currentClass + "_" + this->currentSubroutine +
+                          "_" + "Endloop" + "_" +
+                          std::to_string(this->labelCounter));
+
+  this->labelCounter++;
+
+  // this->vmWritter.writeGoto();
 
   if (!(this->tokenListKey() == ")"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "{"))
     return false;
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
+  /*For having memory of the loopcounter*/
+  int loopLabelCounter = this->labelCounter;
   // this->flagIsDoStatement = false;
   if (!this->compileStatements()) /*this->compileStatements();*/
     return false;
   //  this->flagIsDoStatement = true;
+  this->labelCounter = loopLabelCounter;
 
   if (!(this->tokenListKey() == "}"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</whileStatement>");
+  this->vmWritter.writeGoto(this->currentClass + "_" + this->currentSubroutine +
+                            "_" + "loop" + "_" +
+                            std::to_string(this->labelCounter - 1));
+  this->vmWritter.writeLabel(this->currentClass + "_" +
+                             this->currentSubroutine + "_" + "Endloop" + "_" +
+                             std::to_string(this->labelCounter - 1));
+
+  // this->labelCounter = 0;
+  // this->writeToFileFinishNonTerminal("</whileStatement>");
   return true;
 }
 bool CompilationEngine::compileDo() {
@@ -449,22 +642,35 @@ bool CompilationEngine::compileDo() {
   if (!(this->tokenListKey() == "do"))
     return false;
 
-  this->writeToFileFinishNonTerminal("<doStatement>");
-  this->writeToFile();
+  // this->writeToFileFinishNonTerminal("<doStatement>");
+  // this->writeToFile();
   this->tokenListIndex++;
+
+  int startExpressionIndex = this->tokenListIndex;
 
   this->flagIsDoStatement = true;
   if (!this->compileExpression())
     return false;
   this->flagIsDoStatement = false;
 
+  /*Just to test something*/
+  std::string expression = "";
+  for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+    expression.append(this->tokenList.at(i)->begin()->first);
+
+  std::cout << expression << "\n";
+  this->_codeWrite(expression);
+
   if (!(this->tokenListKey() == ";"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</doStatement>");
+  /*Adding the pop for the returned values that will be 0 in this case*/
+  this->vmWritter.writePop("temp", 0);
+
+  // this->writeToFileFinishNonTerminal("</doStatement>");
   return true;
 }
 bool CompilationEngine::compileReturn() {
@@ -472,33 +678,70 @@ bool CompilationEngine::compileReturn() {
   if (!(this->tokenListKey() == "return"))
     return false;
 
-  this->writeToFileFinishNonTerminal("<returnStatement>");
-  this->writeToFile();
+  // this->writeToFileFinishNonTerminal("<returnStatement>");
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  //  this->flagIsDoStatement = false;
+  int startExpressionIndex = this->tokenListIndex;
+
   if (!this->compileExpression())
     return false;
-  //  this->flagIsDoStatement = true;
+
+  /*Just to test something*/
+  std::string expression = "";
+  for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+    expression.append(this->tokenList.at(i)->begin()->first);
+
+  std::cout << expression << "\n";
+  this->_codeWrite(expression);
 
   if (!(this->tokenListKey() == ";"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->writeToFileFinishNonTerminal("</returnStatement>");
+  // this->writeToFileFinishNonTerminal("</returnStatement>");
+  /**/
+  // this->vmWritter.writePop("temp", 1);
+  if (expression.empty())
+    this->vmWritter.writePush("constant", 0);
+
+  this->vmWritter.writeReturn();
+
   return true;
 }
 
-void CompilationEngine::compileParameterList() {
+/*Needed in order to produce the correct narg number*/
+void CompilationEngine::compileParameterList(int *nArgsCounter) {
+  /* I think in here there is a mistake i had solved*/
 
   /*Check there are no parameters*/
   if (this->tokenListKey() == ")") {
-    this->writeToFileStartNonTerminal("<parameterList>");
-    this->writeToFileFinishNonTerminal("</parameterList>");
+    /*needs to be done if using a method and not a subroutine*/
+    // this->subroutineSymbolTable.setSymbol(
+    //     this->subroutineSymbolTable.allocateSymbol());
+    // this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
+    // this->subroutineSymbolTable.getCurrentSymbol()->setType(this->currentClass);
+    // this->subroutineSymbolTable.getCurrentSymbol()->setName("this");
+    // this->subroutineSymbolTable.addSymbol(
+    //     this->subroutineSymbolTable.getCurrentSymbol());
+    // this->subroutineSymbolTable.setSymbol(nullptr);
+
+    // this->writeToFileStartNonTerminal("<parameterList>");
+    // this->writeToFileFinishNonTerminal("</parameterList>");
     return;
   }
+
+  /*Duplicated code needs to be fixed*/
+  // this->subroutineSymbolTable.setSymbol(
+  //     this->subroutineSymbolTable.allocateSymbol());
+  // this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
+  // this->subroutineSymbolTable.getCurrentSymbol()->setType(this->currentClass);
+  // this->subroutineSymbolTable.getCurrentSymbol()->setName("this");
+  // this->subroutineSymbolTable.addSymbol(
+  //     this->subroutineSymbolTable.getCurrentSymbol());
+  // this->subroutineSymbolTable.setSymbol(nullptr);
 
   if (!(this->tokenListKey() == "int" || this->tokenListKey() == "char" ||
         this->tokenListKey() == "boolean" ||
@@ -508,20 +751,21 @@ void CompilationEngine::compileParameterList() {
   this->subroutineSymbolTable.setSymbol(
       this->subroutineSymbolTable.allocateSymbol());
   /*Improve this*/
-  this->subroutineSymbolTable.getSymbol()->setKind("argument");
+  this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
 
-  this->writeToFileStartNonTerminal("<parameterList>");
+  // this->writeToFileStartNonTerminal("<parameterList>");
 
-  this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey());
-  this->writeToFile();
+  this->subroutineSymbolTable.getCurrentSymbol()->setType(this->tokenListKey());
+  // this->writeToFile();
   this->tokenListIndex++;
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return;
 
-  this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey());
-  this->subroutineSymbolTable.addSymbol(this->classSymbolTable.getSymbol());
+  this->subroutineSymbolTable.getCurrentSymbol()->setName(this->tokenListKey());
+  this->subroutineSymbolTable.addSymbol(
+      this->subroutineSymbolTable.getCurrentSymbol());
   this->subroutineSymbolTable.setSymbol(nullptr);
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   while ((this->tokenListKey() == ",") &&
@@ -533,21 +777,23 @@ void CompilationEngine::compileParameterList() {
 
     this->subroutineSymbolTable.setSymbol(
         this->subroutineSymbolTable.allocateSymbol());
-    this->subroutineSymbolTable.getSymbol()->setKind("argument");
-    this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey(1));
-    this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey(2));
+    this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
+    this->subroutineSymbolTable.getCurrentSymbol()->setType(
+        this->tokenListKey(1));
+    this->subroutineSymbolTable.getCurrentSymbol()->setName(
+        this->tokenListKey(2));
     this->subroutineSymbolTable.addSymbol(
-        this->subroutineSymbolTable.getSymbol());
+        this->subroutineSymbolTable.getCurrentSymbol());
     this->subroutineSymbolTable.setSymbol(nullptr);
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
   }
-  this->writeToFileFinishNonTerminal("</parameterList>");
+  // this->writeToFileFinishNonTerminal("</parameterList>");
 
   return;
 }
@@ -556,11 +802,12 @@ bool CompilationEngine::compileExpression() {
   if (this->tokenListKey() == ";")
     return true;
 
+  // int startExpressionIndex = this->tokenListIndex;
   int iteration = 0;
   bool succesfull = true;
 
-  if (!this->flagIsDoStatement)
-    this->writeToFileStartNonTerminal("<expression>");
+  // if (!this->flagIsDoStatement)
+  // this->writeToFileStartNonTerminal("<expression>");
 
   /*for be working just now*/
   this->compileTerm(&iteration, &succesfull);
@@ -578,20 +825,235 @@ bool CompilationEngine::compileExpression() {
     if (!JackTypes::tokenIsOp(this->tokenListKey()))
       break;
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
     this->compileTerm(&iteration, &succesfull);
     if (!succesfull)
       return false;
   }
   if (!this->flagIsDoStatement) {
-    this->writeToFileFinishNonTerminal("</expression>");
-    // this->flagIsDoStatement = false; /*Hard to understand*/
+    // this->writeToFileFinishNonTerminal("</expression>");
+    //  this->flagIsDoStatement = false; /*Hard to understand*/
   }
+
+  // std::string expression = "";
+  // for (int i = startExpressionIndex; i < this->tokenListIndex; i++)
+  //   expression.append(this->tokenList.at(i)->begin()->first);
+  //
+  // std::cout << expression << "\n";
+  // this->_codeWrite(expression);
 
   return true;
 }
-void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
+/*TEST with
+ * x + g(2,y,-z)*5
+ * a + b * c
+ * x + y -2
+ * foo(x,y+1,-7)
+ * */
+
+SymbolTable::Symbol *
+CompilationEngine::_getSymbol(const std::string &symbolName) {
+  SymbolTable::Symbol *symbol;
+  symbol = this->subroutineSymbolTable.getSymbol(symbolName);
+  if (symbol)
+    return symbol;
+
+  symbol = this->classSymbolTable.getSymbol(symbolName);
+  if (symbol)
+    return symbol;
+  //
+  return NULL;
+}
+void CompilationEngine::_codeWrite(std::string &expression) {
+  std::cout << expression << "\n";
+
+  if (expression.empty())
+    return;
+
+  if ((expression.substr(0, 1) == "(" &&
+       expression.substr(expression.size() - 1, 1) == ")")) {
+    expression = expression.substr(1, expression.size() - 2);
+    return this->_codeWrite(expression);
+  }
+
+  if (JackTypes::tokenIsIntegerConstant(expression)) {
+    this->vmWritter.writePush("constant", std::stoi(expression));
+    return;
+  }
+  /*Not correct is considering functions*/
+  /*to remove \( \)*/
+  /*identifier regex*/
+  // std::string identifierRegex = R"([a-zA-Z])";
+
+  /*to improve*/
+  std::regex operators = std::regex(R"(\+|\-|\*|\/|&|\||<|>|=)");
+
+  if (!std::regex_match(expression, std::regex(R"(^[0-9].*)")) &&
+      !std::regex_match(expression, std::regex(R"(.*\(.*\).*)")) &&
+      !std::regex_search(expression, operators)) {
+    SymbolTable::Symbol *symbol = this->_getSymbol(expression);
+
+    if (symbol)
+      this->vmWritter.writePush(symbol->kind, symbol->posInSegment);
+
+    return;
+  }
+
+  /* so is
+   * a+b(...)
+   * a(...)+b
+   * aaa(...)+b(....)
+   * f(......)
+   *
+   * */
+
+  // * + a -> [x]
+  if (std::regex_match(expression.substr(0, 1), std::regex(R"([~|-])"))) {
+
+    std::string _op;
+    std::string right;
+    _op = expression.substr(0, 1);
+    right = expression.substr(1);
+    this->_codeWrite(right);
+    /* - can be used as binary operator or unary operator*/
+    (_op == "-") ? this->vmWritter.writeArithmetic(_op + "" + _op)
+                 : this->vmWritter.writeArithmetic(_op);
+    return;
+  }
+
+  // * x + y -> first [x]
+  /*Error because not considering ~ operator*/
+  const std::regex _operatorsPatternRegex(R"([\+|\~|\-|\*|\/|&|\||<|>|=])");
+  if ((expression.find_first_of('(') == std::string::npos &&
+       std::regex_search(expression, _operatorsPatternRegex))) {
+
+    std::string _op;
+    std::string right;
+    // if (std::regex_match(expression.substr(0, 1), _operatorsPatternRegex)) {
+    //   _op = expression.substr(0, 1);
+    //   right = expression.substr(1);
+    //   this->_codeWrite(right);
+    //
+    //   /* - can be used as binary operator or unary operator*/
+    //
+    //   (_op == "-") ? this->vmWritter.writeArithmetic(_op + "" + _op)
+    //                : this->vmWritter.writeArithmetic(_op);
+    //   return;
+    // }
+
+    std::stringstream left;
+    std::string lefts;
+    size_t i = 0;
+    while (i < expression.size() &&
+           !std::regex_match(expression.substr(i, 1), _operatorsPatternRegex)) {
+      left << expression.substr(i, 1);
+      i++;
+    }
+    lefts = left.str();
+    _op = expression.substr(lefts.size(), 1);
+    right = expression.substr(lefts.size() + 1);
+    this->_codeWrite(lefts);
+    this->_codeWrite(right);
+    this->vmWritter.writeArithmetic(_op);
+    return;
+  }
+
+  // * a+b(...)
+  std::string resultingExpression =
+      expression.substr(expression.find_first_of('('),
+                        expression.size() - expression.find_first_of('('));
+  std::string beforeOpenPar =
+      expression.substr(0, expression.find_first_of('('));
+  // * a+b(...)
+  if (std::regex_search(beforeOpenPar, _operatorsPatternRegex)) {
+    int i = 0;
+    for (; !std::regex_match(expression.substr(i, 1), _operatorsPatternRegex);
+         i++)
+      ;
+    std::cout << expression.substr(0, i) << "\n";
+    std::string lefts = expression.substr(0, i);
+    std::string _op = expression.substr(i, 1);
+    std::string right = expression.substr(i + 1);
+    this->_codeWrite(lefts);
+    this->_codeWrite(right);
+    this->vmWritter.writeArithmetic(_op);
+    return;
+  }
+
+  // * a(...)+b
+  // * aaa(...)+b(....)
+  // * f(......)
+  std::stack<char> parenthesisStack{};
+  std::stringstream str;
+  size_t i = 0;
+  str << resultingExpression.at(i);
+  parenthesisStack.push(resultingExpression.at(i++));
+  while (!parenthesisStack.empty() && i <= resultingExpression.size() - 1) {
+    if (resultingExpression.at(i) == ')') {
+      parenthesisStack.pop();
+    }
+    if (resultingExpression.at(i) == '(') {
+      parenthesisStack.push(i);
+    }
+    // std::cout << resultingExpression.substr(0, i) << "\n";
+    str << resultingExpression.at(i);
+    i++;
+  }
+  i--;
+  // * a(...)+b
+  // * aaa(...)+b(....)
+  if (expression.size() - 1 > i + expression.find_first_of('(')) {
+    std::string lefts =
+        expression.substr(0, i + expression.find_first_of('(') + 1);
+    std::cout << lefts << "\n";
+    std::string _op =
+        expression.substr(i + expression.find_first_of('(') + 1, 1);
+    std::cout << _op << "\n";
+    std::string right =
+        expression.substr(i + expression.find_first_of('(') + 2);
+    std::cout << right << "\n";
+    this->_codeWrite(lefts);
+    this->_codeWrite(right);
+    this->vmWritter.writeArithmetic(_op);
+    return;
+  }
+
+  // * f(......)
+  if (expression.substr(i + expression.find_first_of('('), 1) == ")") {
+    std::cout << expression.substr(expression.find_first_of('(') + 1, i - 1)
+              << "\n";
+    std::stringstream streamExpression = std::stringstream(
+        expression.substr(expression.find_first_of('(') + 1, i - 1));
+
+    std::string element = "";
+    while (std::getline(streamExpression, element, ',')) {
+      this->_codeWrite(element);
+    }
+
+    std::string functionName =
+        expression.substr(0, expression.find_first_of("("));
+
+    int nArgs = 0;
+    if (streamExpression.str().empty())
+      nArgs = 0;
+
+    else if (streamExpression.str().find(',') == std::string::npos)
+      nArgs = 1;
+    else {
+      std::string tmpStr(streamExpression.str());
+      for (size_t i = 0; i < tmpStr.size(); i++) {
+        if (tmpStr.at(i) == ',')
+          nArgs += 1;
+      }
+      nArgs++;
+    }
+
+    this->vmWritter.writeCall(functionName, nArgs);
+    return;
+  }
+}
+void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
 
   /*this will be the same */
   /*never theless the tokenListIndex will be incremented because is global*/
@@ -606,25 +1068,25 @@ void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
   if (JackTypes::INT_CONST == this->tokenListValue() ||
       JackTypes::STRING_CONST == this->tokenListValue() ||
       JackTypes::KEYWORD == this->tokenListValue()) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
 
   if (this->tokenListValue() == JackTypes::IDENTIFIER &&
       this->tokenListKey(1) == "[") {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     this->tokenListIndex++;
     if (this->tokenListKey() == "[") {
-      this->writeToFile();
+      // this->writeToFile();
       this->tokenListIndex++;
       if (!this->compileExpression()) {
         *succesfull = false;
@@ -635,35 +1097,35 @@ void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
         return;
       }
       *iteration += 1;
-      this->writeToFile();
+      // this->writeToFile();
       this->tokenListIndex++;
       this->compileTerm(iteration, succesfull);
-      if (!this->flagIsDoStatement)
-        this->writeToFileFinishNonTerminal("</term>");
+      //    if (!this->flagIsDoStatement)
+      // this->writeToFileFinishNonTerminal("</term>");
       return;
     }
   }
   if ((this->tokenListValue() == JackTypes::IDENTIFIER &&
        this->tokenListKey(1) == "(")) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
     if (!this->_compileSubroutineCall()) {
       *succesfull = false;
       return;
     }
     *iteration += 1;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if ((this->tokenListValue() == JackTypes::IDENTIFIER &&
        this->tokenListKey(1) == ".")) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     this->tokenListIndex++;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
     if (!this->_compileSubroutineCall()) {
       *succesfull = false;
@@ -671,25 +1133,25 @@ void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
     }
     *iteration += 1;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if (this->tokenListValue() == JackTypes::IDENTIFIER) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if (this->tokenListKey() == "(") {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     this->tokenListIndex++;
     if (!this->compileExpression()) {
       *succesfull = false;
@@ -700,34 +1162,34 @@ void CompilationEngine::compileTerm(int* iteration, bool* succesfull) {
       return;
     }
     *iteration += 1;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   if (JackTypes::tokenIsUnaryOp(this->tokenListKey()) && *iteration == 0) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
 
   if (JackTypes::tokenIsKeywordConstant(this->tokenListKey())) {
-    if (!this->flagIsDoStatement)
-      this->writeToFileStartNonTerminal("<term>");
-    this->writeToFile();
+    // if (!this->flagIsDoStatement)
+    // this->writeToFileStartNonTerminal("<term>");
+    // this->writeToFile();
     *iteration += 1;
     this->tokenListIndex++;
     this->compileTerm(iteration, succesfull);
-    if (!this->flagIsDoStatement)
-      this->writeToFileFinishNonTerminal("</term>");
+    //    if (!this->flagIsDoStatement)
+    // this->writeToFileFinishNonTerminal("</term>");
     return;
   }
   return;
@@ -739,13 +1201,13 @@ bool CompilationEngine::_compileSubroutineCall() {
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "("))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   bool old_state_flag = this->flagIsDoStatement;
@@ -757,7 +1219,7 @@ bool CompilationEngine::_compileSubroutineCall() {
   if (!(this->tokenListKey() == ")"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
   return true;
 }
@@ -771,11 +1233,11 @@ bool CompilationEngine::compileVarDec() {
   this->subroutineSymbolTable.setSymbol(
       this->subroutineSymbolTable.allocateSymbol());
 
-  this->writeToFileFinishNonTerminal("<varDec>");
+  // this->writeToFileFinishNonTerminal("<varDec>");
 
   std::string kind = this->tokenListKey();
-  this->subroutineSymbolTable.getSymbol()->setKind(this->tokenListKey());
-  this->writeToFile();
+  this->subroutineSymbolTable.getCurrentSymbol()->setKind(this->tokenListKey());
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "int" || this->tokenListKey() == "char" ||
@@ -784,19 +1246,22 @@ bool CompilationEngine::compileVarDec() {
     return false;
 
   std::string type = this->tokenListKey();
-  this->subroutineSymbolTable.getSymbol()->setType(this->tokenListKey());
-  this->writeToFile();
+
+  /*Adding this in method (arg0)*/
+
+  this->subroutineSymbolTable.getCurrentSymbol()->setType(this->tokenListKey());
+  // this->writeToFile();
   this->tokenListIndex++;
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
-  this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey());
+  this->subroutineSymbolTable.getCurrentSymbol()->setName(this->tokenListKey());
   this->subroutineSymbolTable.addSymbol(
-      this->subroutineSymbolTable.getSymbol());
+      this->subroutineSymbolTable.getCurrentSymbol());
   this->subroutineSymbolTable.setSymbol(nullptr);
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
   while ((this->tokenListKey() == ",") &&
@@ -805,35 +1270,36 @@ bool CompilationEngine::compileVarDec() {
 
     this->subroutineSymbolTable.setSymbol(
         this->subroutineSymbolTable.allocateSymbol());
-    this->subroutineSymbolTable.getSymbol()->setKind(kind);
-    this->subroutineSymbolTable.getSymbol()->setType(type);
-    this->subroutineSymbolTable.getSymbol()->setName(this->tokenListKey(1));
+    this->subroutineSymbolTable.getCurrentSymbol()->setKind(kind);
+    this->subroutineSymbolTable.getCurrentSymbol()->setType(type);
+    this->subroutineSymbolTable.getCurrentSymbol()->setName(
+        this->tokenListKey(1));
     this->subroutineSymbolTable.addSymbol(
-        this->subroutineSymbolTable.getSymbol());
+        this->subroutineSymbolTable.getCurrentSymbol());
     this->subroutineSymbolTable.setSymbol(nullptr);
 
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
   }
 
   if (!(this->tokenListKey() == ";"))
     return false;
 
-  this->writeToFile();
+  // this->writeToFile();
   this->tokenListIndex++;
 
-  this->subroutineSymbolTable.resetSymbolTable();
+  // this->subroutineSymbolTable.resetSymbolTable();
 
-  this->writeToFileFinishNonTerminal("</varDec>");
+  // this->writeToFileFinishNonTerminal("</varDec>");
 
   return true;
 }
 void CompilationEngine::compileExpressionList() {
-  this->writeToFileStartNonTerminal("<expressionList>");
+  // this->writeToFileStartNonTerminal("<expressionList>");
   if (this->tokenListKey() == ")") {
-    this->writeToFileFinishNonTerminal("</expressionList>");
+    // this->writeToFileFinishNonTerminal("</expressionList>");
     return;
   }
 
@@ -844,19 +1310,19 @@ void CompilationEngine::compileExpressionList() {
   while (true) {
     if (!(this->tokenListKey() == ","))
       break;
-    this->writeToFile();
+    // this->writeToFile();
     this->tokenListIndex++;
     // this->flagIsDoStatement = false;
     if (!this->compileExpression())
       break;
   }
 
-  this->writeToFileFinishNonTerminal("</expressionList>");
+  // this->writeToFileFinishNonTerminal("</expressionList>");
 
   return;
 }
 
-const std::vector<std::map<std::string, JackTypes::TokenType>*>&
+const std::vector<std::map<std::string, JackTypes::TokenType> *> &
 CompilationEngine::getTokenList() {
   return this->tokenList;
 }

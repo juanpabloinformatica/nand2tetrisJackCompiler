@@ -25,27 +25,29 @@ public:
     Symbol(std ::string name = "", std ::string type = "",
            std ::string kind = "", int posInSegment = -1)
         : name(name), type(type), kind(kind), posInSegment(posInSegment) {};
-    void setName(const std::string& name);
-    void setType(const std::string& type);
-    void setKind(const std::string& kind);
+    void setName(const std::string &name);
+    void setType(const std::string &type);
+    void setKind(const std::string &kind);
     void setPosInSegment(int posInSegment);
   };
-  std::map<std::string, Symbol> const& getSymbolTable();
-  Symbol* allocateSymbol();
-  void addSymbol(Symbol* symbol);
-  Symbol* getSymbol();
-  void setSymbol(Symbol* symbol);
+  std::map<std::string, Symbol *> const &getSymbolTable();
+  Symbol *allocateSymbol();
+  void addSymbol(Symbol *symbol);
+  Symbol *getCurrentSymbol();
+  Symbol *getSymbol(const std::string &symbolName);
+  void setSymbol(Symbol *symbol);
   void resetSymbolTable();
+  int getLocalSymbolCounter();
 
 private:
-  std::map<std::string, Symbol*> symbolTable;
-  Symbol* currentSymbol;
+  std::map<std::string, Symbol *> symbolTable;
+  Symbol *currentSymbol;
   int staticSymbolCounter;
   int fieldSymbolCounter;
   int argumentSymbolCounter;
   int localSymbolCounter;
-  void incrementSymbolCounter(const std::string& kind);
-  void setSymbolPosInSegment(Symbol* symbol);
+  void incrementSymbolCounter(const std::string &kind);
+  void setSymbolPosInSegment(Symbol *symbol);
   void _deallocateSymbols();
 };
 /*I prefer composition*/
