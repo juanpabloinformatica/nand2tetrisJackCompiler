@@ -1,0 +1,34 @@
+- So when an expression is of type "do ...()" we know that we are
+  not caring about the result so is normally used for calling void functions
+  in those cases I need to retrive the 0 value pushed by convenction
+  by the calle routine
+
+- Now Implementing the compileLet.
+  When a "let ..." expression is met we know that we are somehow capturing the
+  result so we need a pop ....
+
+  we need to push the args
+
+  for x in nArgs
+   push .... 
+  endfor
+  x--
+  call function x
+  pop ....
+
+  - I need to see where to push constant 0 in case the function is void or not
+    that's the idea if the function is void
+
+  - true and false needs to be translated in order it to work correctly
+
+  - Perfect so far so good.
+  - Now the idea is to implement the conditional and uncoditional jumps
+
+  - Loop handling right now I am checking if putting them in the
+    compilationEngine, I could use a stack to get correct label names
+
+    so the I create the stack for pusing and poping the correct labels
+    for the conditions now I need to check correctly the generation.
+
+
+

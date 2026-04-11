@@ -35,6 +35,8 @@ private:
   std::string currentClass;
   /*above all for labels*/
   std::string currentSubroutine;
+  /*For functions, methods, static functions*/
+  std::string currentSubroutineType;
   /**/
   /* For handling loops */
   std::string label;

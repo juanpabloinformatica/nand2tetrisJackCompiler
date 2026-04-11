@@ -1,0 +1,13 @@
+function Main.main 0
+push constant 2
+push constant 5
+push constant 10
+push constant 4
+call Math.multiply 2
+add
+call Math.multiply 2
+call Output.printInt 1
+pop temp 1
+push constant 0
+return
+

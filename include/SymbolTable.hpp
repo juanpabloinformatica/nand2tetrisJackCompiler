@@ -38,6 +38,7 @@ public:
   void setSymbol(Symbol *symbol);
   void resetSymbolTable();
   int getLocalSymbolCounter();
+  int getFieldSymbolCounter();
 
 private:
   std::map<std::string, Symbol *> symbolTable;
