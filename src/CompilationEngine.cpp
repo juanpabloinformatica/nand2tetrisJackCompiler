@@ -231,6 +231,9 @@ bool CompilationEngine::compileSubroutine() {
         this->tokenListKey() == "function" || this->tokenListKey() == "method"))
     return false;
 
+  /* This will need to be improved from now is not my main focus*/
+  this->currentSubroutineType = this->tokenListKey();
+
   // this->writeToFileStartNonTerminal("<subroutineDec>");
 
   // this->writeToFile();
@@ -250,6 +253,8 @@ bool CompilationEngine::compileSubroutine() {
 
   this->currentSubroutine = this->tokenListKey();
   // this->writeToFile();
+  //
+
   this->tokenListIndex++;
 
   if (!(this->tokenListKey() == "("))
@@ -309,16 +314,39 @@ bool CompilationEngine::compileSubroutineBody() {
     ;
 
   /*for correct symboltable*/
-  this->vmWritter.writeFunction(
-      this->currentClass, this->currentSubroutine,
-      this->subroutineSymbolTable.getLocalSymbolCounter());
+
+  if (this->currentSubroutineType == "function") {
+    this->vmWritter.writeFunction(
+        this->currentClass, this->currentSubroutine,
+        this->subroutineSymbolTable.getLocalSymbolCounter());
+
+  } else if (this->currentSubroutineType == "constructor") {
+    this->vmWritter.writeFunction(
+        this->currentClass, this->currentSubroutine,
+        this->subroutineSymbolTable.getLocalSymbolCounter());
+    /*Check lambda in c++*/
+    int numberOfFields = this->classSymbolTable.getFieldSymbolCounter();
+    /**/
+    this->vmWritter.writePush("constant", numberOfFields);
+    this->vmWritter.writeCall("Memory.alloc", 1);
+    this->vmWritter.writePop("pointer", 0);
+  } else if (this->currentSubroutineType == "method") {
+    this->vmWritter.writeFunction(
+        this->currentClass, this->currentSubroutine,
+        this->subroutineSymbolTable.getLocalSymbolCounter());
+    this->vmWritter.writePush("argument", 0);
+    this->vmWritter.writePop("pointer", 0);
+  }
 
   this->compileStatements();
 
   if (!(this->tokenListKey() == "}"))
     return false;
   // this->writeToFile();
+  //
   this->tokenListIndex++;
+  /*Returning object based address*/
+  // this->vmWritter.writePush("pointer", 1);
   // this->writeToFileFinishNonTerminal("</subroutineBody>");
 
   return true;
@@ -364,10 +392,11 @@ bool CompilationEngine::compileLet() {
 
     std::cout << expression << "\n";
     /*When to put this is something I will figure it out after*/
-    if (expression == "true")
-      expression = "-1";
-    if (expression == "false")
-      expression = "0";
+    /*handled by codeWrite*/
+    // if (expression == "true")
+    //   expression = "-1";
+    // if (expression == "false")
+    //   expression = "0";
 
     this->_codeWrite(expression);
 
@@ -399,10 +428,10 @@ bool CompilationEngine::compileLet() {
 
   std::cout << expression << "\n";
   /*When to put this is something I will figure it out after*/
-  if (expression == "true")
-    expression = "-1";
-  if (expression == "false")
-    expression = "0";
+  // if (expression == "true")
+  //   expression = "-1";
+  // if (expression == "false")
+  //   expression = "0";
 
   this->_codeWrite(expression);
 
@@ -583,10 +612,12 @@ bool CompilationEngine::compileWhile() {
     std::cout << expression << "\n";
   }
   /*When to put this is something I will figure it out after*/
-  if (expression == "true")
-    expression = "-1";
-  if (expression == "false")
-    expression = "0";
+
+  /*Handled by codeWrite*/
+  // if (expression == "true")
+  //   expression = "-1";
+  // if (expression == "false")
+  //   expression = "0";
 
   this->_codeWrite(expression);
 
@@ -707,6 +738,10 @@ bool CompilationEngine::compileReturn() {
   if (expression.empty())
     this->vmWritter.writePush("constant", 0);
 
+  /*Pushing object reference if constructor*/
+  if (expression == "this")
+    this->vmWritter.writePush("pointer", 0);
+
   this->vmWritter.writeReturn();
 
   return true;
@@ -716,17 +751,21 @@ bool CompilationEngine::compileReturn() {
 void CompilationEngine::compileParameterList(int *nArgsCounter) {
   /* I think in here there is a mistake i had solved*/
 
+  /*if is a method We will add this as argument*/
+  if (this->currentSubroutineType == "method") {
+    /*needs to be done if using a method and not a subroutine*/
+    this->subroutineSymbolTable.setSymbol(
+        this->subroutineSymbolTable.allocateSymbol());
+    this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
+    this->subroutineSymbolTable.getCurrentSymbol()->setType(this->currentClass);
+    this->subroutineSymbolTable.getCurrentSymbol()->setName("this");
+    this->subroutineSymbolTable.addSymbol(
+        this->subroutineSymbolTable.getCurrentSymbol());
+    this->subroutineSymbolTable.setSymbol(nullptr);
+  }
+
   /*Check there are no parameters*/
   if (this->tokenListKey() == ")") {
-    /*needs to be done if using a method and not a subroutine*/
-    // this->subroutineSymbolTable.setSymbol(
-    //     this->subroutineSymbolTable.allocateSymbol());
-    // this->subroutineSymbolTable.getCurrentSymbol()->setKind("argument");
-    // this->subroutineSymbolTable.getCurrentSymbol()->setType(this->currentClass);
-    // this->subroutineSymbolTable.getCurrentSymbol()->setName("this");
-    // this->subroutineSymbolTable.addSymbol(
-    //     this->subroutineSymbolTable.getCurrentSymbol());
-    // this->subroutineSymbolTable.setSymbol(nullptr);
 
     // this->writeToFileStartNonTerminal("<parameterList>");
     // this->writeToFileFinishNonTerminal("</parameterList>");
@@ -871,10 +910,16 @@ void CompilationEngine::_codeWrite(std::string &expression) {
   if (expression.empty())
     return;
 
-  if ((expression.substr(0, 1) == "(" &&
-       expression.substr(expression.size() - 1, 1) == ")")) {
-    expression = expression.substr(1, expression.size() - 2);
-    return this->_codeWrite(expression);
+  if (expression == "true") {
+    expression = "-1";
+    this->_codeWrite(expression);
+    return;
+  }
+
+  if (expression == "false") {
+    expression = "0";
+    this->_codeWrite(expression);
+    return;
   }
 
   if (JackTypes::tokenIsIntegerConstant(expression)) {
@@ -887,7 +932,7 @@ void CompilationEngine::_codeWrite(std::string &expression) {
   // std::string identifierRegex = R"([a-zA-Z])";
 
   /*to improve*/
-  std::regex operators = std::regex(R"(\+|\-|\*|\/|&|\||<|>|=)");
+  std::regex operators = std::regex(R"(~|\+|\-|\*|\/|&|\||<|>|=)");
 
   if (!std::regex_match(expression, std::regex(R"(^[0-9].*)")) &&
       !std::regex_match(expression, std::regex(R"(.*\(.*\).*)")) &&
@@ -930,18 +975,6 @@ void CompilationEngine::_codeWrite(std::string &expression) {
 
     std::string _op;
     std::string right;
-    // if (std::regex_match(expression.substr(0, 1), _operatorsPatternRegex)) {
-    //   _op = expression.substr(0, 1);
-    //   right = expression.substr(1);
-    //   this->_codeWrite(right);
-    //
-    //   /* - can be used as binary operator or unary operator*/
-    //
-    //   (_op == "-") ? this->vmWritter.writeArithmetic(_op + "" + _op)
-    //                : this->vmWritter.writeArithmetic(_op);
-    //   return;
-    // }
-
     std::stringstream left;
     std::string lefts;
     size_t i = 0;
@@ -1019,6 +1052,13 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     return;
   }
 
+  /*(........)&(.......)*/
+  if ((expression.substr(0, 1) == "(" &&
+       expression.substr(expression.size() - 1, 1) == ")")) {
+    expression = expression.substr(1, expression.size() - 2);
+    return this->_codeWrite(expression);
+  }
+
   // * f(......)
   if (expression.substr(i + expression.find_first_of('('), 1) == ")") {
     std::cout << expression.substr(expression.find_first_of('(') + 1, i - 1)
@@ -1048,11 +1088,34 @@ void CompilationEngine::_codeWrite(std::string &expression) {
       }
       nArgs++;
     }
+    /*For calling passing this as extra argument*/
+
+    /*If function is called without the className is a method*/
+    /*if function is called through an object is also a method*/
+
+    if (functionName.find_first_of(".") == std::string::npos) {
+      this->vmWritter.writePush("pointer", 0);
+      nArgs++;
+      /*If is a method and and is in the same class the call the function
+       * ClassName.functionName*/
+      functionName = this->currentClass + "." + functionName;
+    } else if (this->_getSymbol(
+                   functionName.substr(0, functionName.find_first_of(".")))) {
+      SymbolTable::Symbol *s = this->_getSymbol(
+          functionName.substr(0, functionName.find_first_of(".")));
+      this->vmWritter.writePush(s->kind, s->posInSegment);
+      nArgs++;
+      /*When the method is called through the object we need to identify the
+       * class of the object to call the correct method */
+      functionName = s->type + "." +
+                     functionName.substr(functionName.find_first_of(".") + 1);
+    }
 
     this->vmWritter.writeCall(functionName, nArgs);
     return;
   }
 }
+
 void CompilationEngine::compileTerm(int *iteration, bool *succesfull) {
 
   /*this will be the same */

@@ -1,0 +1,24 @@
+/*Testing test2*/
+
+push constant 8016
+pop temp 2
+
+label printram
+push temp 2
+push constant 8000
+eq
+if-goto endprintram
+push temp 2
+call Memory.peek 1
+pop temp 0
+push temp 0
+call Output.printInt 1
+pop temp 0
+push temp 2
+push constant 1
+sub
+pop temp 2
+goto printram
+label endprintram
+call Output.println 0
+pop temp 0

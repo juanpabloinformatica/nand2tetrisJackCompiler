@@ -9,14 +9,16 @@ class JackAnalyzer {
 public:
   // JackTokenizer jackTokenizer;
   const std::filesystem::path sourcePath;
-  const std::string& outputFilePath;
-  JackAnalyzer(const std::string &filepath, const std::string &outputFilePath);
+  std::string outputFilePath;
+  JackAnalyzer(const std::string &inputFilepath);
   ~JackAnalyzer();
   void run();
 
 private:
   void handleFile(const std::filesystem::path &filePath);
   void handleFolder(const std::filesystem::path &fileFolder);
+  void setOutputFilePath(const std::filesystem::path &filePath);
+  bool isJackFile(const std::filesystem::path &filePath);
 };
 
 #endif

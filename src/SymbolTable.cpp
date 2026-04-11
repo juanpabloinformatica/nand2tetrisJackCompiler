@@ -32,7 +32,7 @@ SymbolTable::Symbol *SymbolTable::allocateSymbol() {
 void SymbolTable::incrementSymbolCounter(const std::string &kind) {
   if (kind == "static")
     this->staticSymbolCounter++;
-  else if (kind == "field")
+  else if (kind == "this")
     this->fieldSymbolCounter++;
   else if (kind == "argument")
     this->argumentSymbolCounter++;
@@ -51,7 +51,7 @@ void SymbolTable::setSymbolPosInSegment(Symbol *symbol) {
   std::cout << "In here" << "\n";
   if (symbol->kind == "static")
     symbol->posInSegment = staticSymbolCounter;
-  else if (symbol->kind == "field")
+  else if (symbol->kind == "this")
     symbol->posInSegment = fieldSymbolCounter;
   else if (symbol->kind == "argument")
     symbol->posInSegment = argumentSymbolCounter;
@@ -67,6 +67,10 @@ void SymbolTable::Symbol::setKind(const std::string &kind) {
     this->kind = "local";
     return;
   }
+  if (kind == "field") {
+    this->kind = "this";
+    return;
+  }
   this->kind = kind;
 }
 void SymbolTable::Symbol::setType(const std::string &type) {
@@ -78,6 +82,7 @@ void SymbolTable::Symbol::setPosInSegment(int posInSegment) {
 }
 
 int SymbolTable::getLocalSymbolCounter() { return this->localSymbolCounter; }
+int SymbolTable::getFieldSymbolCounter() { return this->fieldSymbolCounter; }
 
 void SymbolTable::resetSymbolTable() {
   this->_deallocateSymbols();
