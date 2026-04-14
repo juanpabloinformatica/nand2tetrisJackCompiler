@@ -365,7 +365,12 @@ bool CompilationEngine::compileLet() {
   this->tokenListIndex++;
 
   /*Now we are placed in the variable name*/
+  /*Now considering that the variable make reference to a array location*/
   std::string expressionVariable = this->tokenListKey();
+  SymbolTable::Symbol *symbol = this->_getSymbol(expressionVariable);
+
+  /*Idkn if good idea I will create a flag */
+  bool isArray = (this->tokenListKey(1) == "[") ? true : false;
 
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
@@ -373,7 +378,12 @@ bool CompilationEngine::compileLet() {
   // this->writeToFile();
   this->tokenListIndex++;
 
-  if (this->tokenListKey() == "[") {
+  /*if this condition if passed then we are in front of an array*/
+  if (isArray) {
+
+    /*pushing base address of the array then followed by the expression inside
+     * the '[' ']'*/
+    this->vmWritter.writePush(symbol->kind, symbol->posInSegment);
 
     // this->writeToFile();
     this->tokenListIndex++;
@@ -391,12 +401,6 @@ bool CompilationEngine::compileLet() {
       expression.append(this->tokenList.at(i)->begin()->first);
 
     std::cout << expression << "\n";
-    /*When to put this is something I will figure it out after*/
-    /*handled by codeWrite*/
-    // if (expression == "true")
-    //   expression = "-1";
-    // if (expression == "false")
-    //   expression = "0";
 
     this->_codeWrite(expression);
 
@@ -404,6 +408,9 @@ bool CompilationEngine::compileLet() {
 
     if (!(this->tokenListKey() == "]"))
       return false;
+
+    this->vmWritter.writeArithmetic("add");
+    this->vmWritter.writePop("pointer", 1);
 
     // this->writeToFile();
     this->tokenListIndex++;
@@ -441,9 +448,15 @@ bool CompilationEngine::compileLet() {
   // this->writeToFile();
   this->tokenListIndex++;
 
-  /*Adding pop for the passed variable*/
-  SymbolTable::Symbol *symbol = this->_getSymbol(expressionVariable);
-  this->vmWritter.writePop(symbol->kind, symbol->posInSegment);
+  // /*Adding pop for the passed variable*/
+  // SymbolTable::Symbol *symbol = this->_getSymbol(expressionVariable);
+  // this->vmWritter.writePop(symbol->kind, symbol->posInSegment);
+
+  // /*Adding pop for the passed variable*/
+  // *symbol = this->_getSymbol(expressionVariable);
+  (!isArray) ? this->vmWritter.writePop(symbol->kind, symbol->posInSegment)
+             : this->vmWritter.writePop("that", 0);
+  ;
 
   // this->writeToFileFinishNonTerminal("</letStatement>");
 
@@ -922,6 +935,30 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     return;
   }
 
+  /*For handling strings*/
+  /*Strings are always created through a kind of fucntion so*/
+  if (JackTypes::tokenIsStringConstant(expression)) {
+    /*Removing 2 for each \" */
+    int stringSize = expression.size() - 2;
+    this->vmWritter.writePush("constant", stringSize);
+    this->vmWritter.writeCall("String.new", 1);
+    this->vmWritter.writePop("pointer", 0);
+    int charIntegerMapped;
+    for (const auto character : expression) {
+      if (character == '"')
+        continue;
+
+      std::cout << character << "\n";
+      charIntegerMapped = (int)character;
+      /*This argument passed*/
+      this->vmWritter.writePush("pointer", 0);
+      this->vmWritter.writePush("constant", charIntegerMapped);
+      this->vmWritter.writeCall("String.appendChar", 2);
+      this->vmWritter.writePop("pointer", 0);
+    }
+    this->vmWritter.writePush("pointer", 0);
+  }
+
   if (JackTypes::tokenIsIntegerConstant(expression)) {
     this->vmWritter.writePush("constant", std::stoi(expression));
     return;
@@ -933,10 +970,12 @@ void CompilationEngine::_codeWrite(std::string &expression) {
 
   /*to improve*/
   std::regex operators = std::regex(R"(~|\+|\-|\*|\/|&|\||<|>|=)");
+  std::regex arrayDelimeters = std::regex(R"(\[|\])");
 
   if (!std::regex_match(expression, std::regex(R"(^[0-9].*)")) &&
       !std::regex_match(expression, std::regex(R"(.*\(.*\).*)")) &&
-      !std::regex_search(expression, operators)) {
+      !std::regex_search(expression, operators) &&
+      !std::regex_search(expression, arrayDelimeters)) {
     SymbolTable::Symbol *symbol = this->_getSymbol(expression);
 
     if (symbol)
@@ -992,6 +1031,23 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     return;
   }
 
+  // this code will break eventually
+
+  /*For handling arrays*/
+  // std::regex arrayDelimeters = std::regex(R"(\[|\])");
+  if (std::regex_search(expression, arrayDelimeters)) {
+    /*Easy case*/
+    std::string lefts = expression.substr(0, expression.find_first_of("["));
+    std::string right = expression.substr(expression.find_first_of("[") + 1,
+                                          expression.find_last_of("]") - 2);
+    this->_codeWrite(lefts);
+    this->_codeWrite(right);
+    this->vmWritter.writeArithmetic("add");
+    this->vmWritter.writePop("pointer", 1);
+    this->vmWritter.writePush("that", 0);
+    return;
+  }
+
   // * a+b(...)
   std::string resultingExpression =
       expression.substr(expression.find_first_of('('),
@@ -1029,7 +1085,6 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     if (resultingExpression.at(i) == '(') {
       parenthesisStack.push(i);
     }
-    // std::cout << resultingExpression.substr(0, i) << "\n";
     str << resultingExpression.at(i);
     i++;
   }
