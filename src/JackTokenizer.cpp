@@ -101,8 +101,8 @@ void JackTokenizer::appendTokenToTokenList(std::string &token) {
 
   JackTypes::TokenType tokenType = JackTypes::UNDEFINED;
   tokenType = this->getTokenType(token);
-  if (tokenType == JackTypes::STRING_CONST)
-    token.erase(std::remove(token.begin(), token.end(), '"'), token.end());
+  // if (tokenType == JackTypes::STRING_CONST)
+  //   token.erase(std::remove(token.begin(), token.end(), '"'), token.end());
 
   this->tokenList.push_back(this->allocateMapObject(token, tokenType));
   return;
