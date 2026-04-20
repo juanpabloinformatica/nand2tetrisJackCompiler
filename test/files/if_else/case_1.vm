@@ -1,0 +1,7 @@
+push constant 3
+push constant 2
+gt
+not
+if-goto __end_if_0
+goto __end_if_0
+label __end_if_0

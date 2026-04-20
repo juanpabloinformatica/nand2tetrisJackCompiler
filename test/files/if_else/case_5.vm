@@ -1,0 +1,7 @@
+not
+if-goto __end_if_0
+not
+if-goto __end_if_1
+goto __end_if_1
+label __else_if_1
+goto __end_if_0

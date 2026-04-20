@@ -7,6 +7,7 @@
 #include <ios>
 #include <regex>
 #include <sstream>
+#include <stack>
 #include <string>
 
 inline std::string CompilationEngine::tokenListKey(int offset) {
@@ -34,11 +35,11 @@ CompilationEngine::CompilationEngine(
 #endif
       tokenList(tokenList),
 #ifdef DEBUG
-      /*tokenListIndex(tokenList.size() - 6)*/ /*For test_1*/
-      /*tokenListIndex(tokenList.size() - 6)*/ /*For test_2*/
-      /*tokenListIndex(tokenList.size() - 1)*/ /*For test_3*/
-      /*tokenListIndex(tokenList.size() - 1)*/ /*For test_4*/
-      tokenListIndex(tokenList.size() - 4),    /*For test_5*/
+/*tokenListIndex(tokenList.size() - 6)*/  /*For test_1*/
+/*tokenListIndex(tokenList.size() - 6)*/  /*For test_2*/
+/*tokenListIndex(tokenList.size() - 1)*/  /*For test_3*/
+/*tokenListIndex(tokenList.size() - 1)*/  /*For test_4*/
+/*tokenListIndex(tokenList.size() - 4),*/ /*For test_5*/
 
 #else
       tokenListIndex(0),
@@ -59,8 +60,11 @@ void CompilationEngine::run() {
    * x + y -2
    * foo(x,y+1,-7)
    * */
-  std::string test = "x+g(2,y,-z)*5";
-  this->_codeWrite(test);
+  // std::string test = "x+g(2,y,-z)*5";
+  // this->_codeWrite(test);
+  while (this->compileIf())
+    ;
+
 #endif
 }
 
@@ -298,6 +302,7 @@ bool CompilationEngine::compileSubroutine() {
   //                               nArgsCounter);
   /*this->vmWritter.rese*/
   this->subroutineSymbolTable.resetSymbolTable();
+  this->labelCounter = 0;
 
   return true;
 }
@@ -500,6 +505,27 @@ bool CompilationEngine::compileIf() {
 
   if (!(this->tokenListKey() == "{"))
     return false;
+
+  /*look ahead code  needs balanced curly brackets*/
+  int isElseIf = false;
+  std::stack<std::string> balancedCurlyBracket = std::stack<std::string>();
+  balancedCurlyBracket.push(this->tokenListKey());
+  size_t memoryTokenListIndex = this->tokenListIndex;
+  this->tokenListIndex++;
+  for (; (size_t)this->tokenListIndex < this->tokenList.size() - 1 &&
+         !balancedCurlyBracket.empty();
+       this->tokenListIndex++) {
+    if (this->tokenListKey() == "}") {
+      balancedCurlyBracket.pop();
+    }
+    if (this->tokenListKey() == "{") {
+      balancedCurlyBracket.push(this->tokenListKey());
+    }
+  }
+  (this->tokenListKey() == "else") ? isElseIf = true : isElseIf = false;
+  /*Reset tokenListIndex after moving forward*/
+  this->tokenListIndex = memoryTokenListIndex;
+
   // this->writeToFile();
   this->tokenListIndex++;
 
@@ -510,18 +536,20 @@ bool CompilationEngine::compileIf() {
   //   this->currentSubroutine +
   //                           "_" + "end_if" + "_" +
   //                           std::to_string(this->labelCounter++));
-  /*look ahead code */
-  int isElseIf = false;
-  size_t tmpTokenListIndex;
-  for (tmpTokenListIndex = this->tokenListIndex;
-       tmpTokenListIndex < this->tokenList.size(); tmpTokenListIndex++) {
-    if (this->tokenList.at(tmpTokenListIndex)->begin()->first == "}") {
-      break;
-    }
-  }
-  (this->tokenList.at(tmpTokenListIndex + 1)->begin()->first == "else")
-      ? isElseIf = true
-      : isElseIf = false;
+  /*look ahead code  needs balanced curly brackets*/
+  // std::stack<std::string> balancedCurlyBracket = std::stack<std::string>();
+  // balancedCurlyBracket.push(this->tokenListKey());
+
+  // size_t tmpTokenListIndex;
+  // for (tmpTokenListIndex = this->tokenListIndex;
+  //      tmpTokenListIndex < this->tokenList.size(); tmpTokenListIndex++) {
+  //   if (this->tokenList.at(tmpTokenListIndex)->begin()->first == "}") {
+  //     break;
+  //   }
+  // }
+  // (this->tokenList.at(tmpTokenListIndex + 1)->begin()->first == "else")
+  //     ? isElseIf = true
+  //     : isElseIf = false;
 
   if (isElseIf)
     this->vmWritter.writeIf(this->currentClass + "_" + this->currentSubroutine +
@@ -537,12 +565,18 @@ bool CompilationEngine::compileIf() {
   if (!this->compileStatements()) /*this->compileStatements();*/
     return false;
 
-  this->labelCounter = ifLabelCounter;
+  /*At the end when returning the labelCounter will be the first called.
+   * lifo so stack frames are going to be called each frame
+   * will have a labelCounter locally but then when it finishes
+   * it will return to the first compileIf and labelCounter will be 1
+   *
+   * */
+  // this->labelCounter = ifLabelCounter;
 
   /*if condition true executed extament then go out of if*/
   this->vmWritter.writeGoto(this->currentClass + "_" + this->currentSubroutine +
                             "_" + "end_if" + "_" +
-                            std::to_string(this->labelCounter - 1));
+                            std::to_string(ifLabelCounter - 1));
 
   if (!(this->tokenListKey() == "}"))
     return false;
@@ -558,7 +592,7 @@ bool CompilationEngine::compileIf() {
     /*add the label of the else*/
     this->vmWritter.writeLabel(this->currentClass + "_" +
                                this->currentSubroutine + "_" + "else_if" + "_" +
-                               std::to_string(this->labelCounter - 1));
+                               std::to_string(ifLabelCounter - 1));
 
     this->tokenListIndex++;
     if (!(this->tokenListKey() == "{"))
@@ -567,14 +601,16 @@ bool CompilationEngine::compileIf() {
     // this->writeToFile();
     this->tokenListIndex++;
 
-    int ifLabelCounter = this->labelCounter;
+    // ifLabelCounter = this->labelCounter;
     if (!this->compileStatements()) /*this->compileStatements();*/
       return false;
 
-    this->labelCounter = ifLabelCounter;
+    // this->labelCounter = ifLabelCounter;
 
     if (!(this->tokenListKey() == "}"))
       return false;
+
+    // this->labelCounter = ifLabelCounter;
 
     // this->writeToFile();
     this->tokenListIndex++;
@@ -583,7 +619,7 @@ bool CompilationEngine::compileIf() {
   /*Setting end label*/
   this->vmWritter.writeLabel(this->currentClass + "_" +
                              this->currentSubroutine + "_" + "end_if" + "_" +
-                             std::to_string(this->labelCounter - 1));
+                             std::to_string(ifLabelCounter - 1));
   // this->labelCounter = 0;
   return true;
 }
@@ -703,6 +739,17 @@ bool CompilationEngine::compileDo() {
     expression.append(this->tokenList.at(i)->begin()->first);
 
   std::cout << expression << "\n";
+
+  /*look ahead if has an string*/
+  /*Needed for saving object */
+  bool hasAString =
+      (std::regex_search(expression, std::regex(R"(\".*\")"))) ? true : false;
+
+  if (hasAString) {
+    this->vmWritter.writePush("pointer", 0);
+    this->vmWritter.writePop("temp", 2);
+  }
+
   this->_codeWrite(expression);
 
   if (!(this->tokenListKey() == ";"))
@@ -713,6 +760,12 @@ bool CompilationEngine::compileDo() {
 
   /*Adding the pop for the returned values that will be 0 in this case*/
   this->vmWritter.writePop("temp", 0);
+  /*As a string creates another object then the object
+   * pointed before needed */
+  if (hasAString) {
+    this->vmWritter.writePush("temp", 2);
+    this->vmWritter.writePop("pointer", 0);
+  }
 
   // this->writeToFileFinishNonTerminal("</doStatement>");
   return true;
@@ -1121,11 +1174,9 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     std::stringstream streamExpression = std::stringstream(
         expression.substr(expression.find_first_of('(') + 1, i - 1));
 
-    std::string element = "";
-    while (std::getline(streamExpression, element, ',')) {
-      this->_codeWrite(element);
-    }
-
+    /*This was moved because it was neede above all determine
+     * if it was a method, because in that case this parameter needs to
+     * be pushed first*/
     std::string functionName =
         expression.substr(0, expression.find_first_of("("));
 
@@ -1165,8 +1216,15 @@ void CompilationEngine::_codeWrite(std::string &expression) {
       functionName = s->type + "." +
                      functionName.substr(functionName.find_first_of(".") + 1);
     }
-
+    /**/
+    /*It will later organize*/
+    std::string element = "";
+    while (std::getline(streamExpression, element, ',')) {
+      /*Save object pointer in case is an string*/
+      this->_codeWrite(element);
+    }
     this->vmWritter.writeCall(functionName, nArgs);
+
     return;
   }
 }

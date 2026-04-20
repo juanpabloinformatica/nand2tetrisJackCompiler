@@ -244,14 +244,14 @@ JackTokenizer::getTokenList() {
   this->appendTokenToTokenList(t41);
   /* test_5*/
   /*a[2]*/
-  std::string t51 = std::string("a");
-  std::string t52 = std::string("[");
-  std::string t53 = std::string("2");
-  std::string t54 = std::string("]");
-  this->appendTokenToTokenList(t51);
-  this->appendTokenToTokenList(t52);
-  this->appendTokenToTokenList(t53);
-  this->appendTokenToTokenList(t54);
+  /*  std::string t51 = std::string("a");*/
+  /*  std::string t52 = std::string("[");*/
+  /*  std::string t53 = std::string("2");*/
+  /*  std::string t54 = std::string("]");*/
+  /*  this->appendTokenToTokenList(t51); */
+  /*  this->appendTokenToTokenList(t52); */
+  /*  this->appendTokenToTokenList(t53); */
+  /*  this->appendTokenToTokenList(t54); */
   /*
 null
 

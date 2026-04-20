@@ -71,8 +71,8 @@ void VmWritter::writeArithmetic(const std::string &command) {
     arithmeticAsm = "neg";
   else if (command == "&")
     arithmeticAsm = "and";
-  else if (command == "or")
-    arithmeticAsm = "|";
+  else if (command == "|")
+    arithmeticAsm = "or";
   else if (command == "~")
     arithmeticAsm = "not";
   else if (command == ">")

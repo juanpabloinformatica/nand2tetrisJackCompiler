@@ -1,0 +1,56 @@
+not
+if-goto __else_if_0
+goto __end_if_0
+label __else_if_0
+not
+if-goto __else_if_1
+not
+if-goto __else_if_2
+goto __end_if_2
+label __else_if_2
+label __end_if_2
+goto __end_if_1
+label __else_if_1
+not
+if-goto __else_if_3
+goto __end_if_3
+label __else_if_3
+label __end_if_3
+label __end_if_1
+label __end_if_0
+
+not
+if-goto __else_if_4
+not
+if-goto __else_if_5
+goto __end_if_5
+label __else_if_5
+label __end_if_5
+goto __end_if_4
+label __else_if_4
+not
+if-goto __else_if_6
+goto __end_if_6
+label __else_if_6
+label __end_if_6
+label __end_if_4
+
+not
+if-goto __end_if_7
+goto __end_if_7
+label __end_if_7
+
+not
+if-goto __end_if_8
+goto __end_if_8
+label __end_if_8
+
+not
+if-goto __end_if_9
+goto __end_if_9
+label __end_if_9
+
+not
+if-goto __end_if_10
+goto __end_if_10
+label __end_if_10
