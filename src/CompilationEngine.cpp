@@ -376,7 +376,6 @@ bool CompilationEngine::compileLet() {
 
   /*Idkn if good idea I will create a flag */
   bool isArray = (this->tokenListKey(1) == "[") ? true : false;
-
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
@@ -416,6 +415,15 @@ bool CompilationEngine::compileLet() {
 
     this->vmWritter.writeArithmetic("add");
     this->vmWritter.writePop("pointer", 1);
+    /*if save correct array cell to store*/
+    // hasInnerArray =
+    //     std::count_if(expression.begin(), expression.end(),
+    //                   [](char letter) { return letter == '['; }) > 1;
+
+    // if (hasInnerArray) {
+    this->vmWritter.writePush("pointer", 1);
+    this->vmWritter.writePop("temp", 2);
+    // }
 
     // this->writeToFile();
     this->tokenListIndex++;
@@ -459,9 +467,15 @@ bool CompilationEngine::compileLet() {
 
   // /*Adding pop for the passed variable*/
   // *symbol = this->_getSymbol(expressionVariable);
-  (!isArray) ? this->vmWritter.writePop(symbol->kind, symbol->posInSegment)
-             : this->vmWritter.writePop("that", 0);
-  ;
+  // (!isArray) ? this->vmWritter.writePop(symbol->kind, symbol->posInSegment)
+  //            : this->vmWritter.writePop("that", 0);
+  if (!isArray)
+    this->vmWritter.writePop(symbol->kind, symbol->posInSegment);
+  else {
+    this->vmWritter.writePush("temp", 2);
+    this->vmWritter.writePop("pointer", 1);
+    this->vmWritter.writePop("that", 0);
+  }
 
   // this->writeToFileFinishNonTerminal("</letStatement>");
 
@@ -982,7 +996,7 @@ void CompilationEngine::_codeWrite(std::string &expression) {
     return;
   }
 
-  if (expression == "false") {
+  if (expression == "false" || expression == "null") {
     expression = "0";
     this->_codeWrite(expression);
     return;
@@ -1088,143 +1102,239 @@ void CompilationEngine::_codeWrite(std::string &expression) {
 
   /*For handling arrays*/
   // std::regex arrayDelimeters = std::regex(R"(\[|\])");
-  if (std::regex_search(expression, arrayDelimeters)) {
-    /*Easy case*/
-    std::string lefts = expression.substr(0, expression.find_first_of("["));
-    std::string right = expression.substr(expression.find_first_of("[") + 1,
-                                          expression.find_last_of("]") - 2);
-    this->_codeWrite(lefts);
-    this->_codeWrite(right);
-    this->vmWritter.writeArithmetic("add");
-    this->vmWritter.writePop("pointer", 1);
-    this->vmWritter.writePush("that", 0);
-    return;
-  }
 
-  // * a+b(...)
-  std::string resultingExpression =
-      expression.substr(expression.find_first_of('('),
-                        expression.size() - expression.find_first_of('('));
-  std::string beforeOpenPar =
-      expression.substr(0, expression.find_first_of('('));
-  // * a+b(...)
-  if (std::regex_search(beforeOpenPar, _operatorsPatternRegex)) {
-    int i = 0;
-    for (; !std::regex_match(expression.substr(i, 1), _operatorsPatternRegex);
-         i++)
-      ;
-    std::cout << expression.substr(0, i) << "\n";
-    std::string lefts = expression.substr(0, i);
-    std::string _op = expression.substr(i, 1);
-    std::string right = expression.substr(i + 1);
-    this->_codeWrite(lefts);
-    this->_codeWrite(right);
-    this->vmWritter.writeArithmetic(_op);
-    return;
-  }
+  // if (std::regex_search(expression, arrayDelimeters) &&
+  //       !std::regex_search(expression.substr(expression.find_last_of("]")),
+  //                          _operatorsPatternRegex) &&
+  //       !std::regex_search(expression.substr(0,
+  //       expression.find_first_of("[")),
+  //                          _operatorsPatternRegex)) {
+  //     /*Debug*/
+  //     std::string lef = expression.substr(expression.find_last_of("]"));
+  //     std::string rig = expression.substr(0, expression.find_first_of("["));
+  //
+  //     /*Easy case*/
+  //     std::string lefts = expression.substr(0,
+  //     expression.find_first_of("[")); std::string right = expression.substr(
+  //         expression.find_first_of("[") + 1,
+  //         expression.find_last_of("]") - expression.find_first_of("[") - 1);
+  //
+  //     this->_codeWrite(lefts);
+  //     this->_codeWrite(right);
+  //     this->vmWritter.writeArithmetic("add");
+  //     this->vmWritter.writePop("pointer", 1);
+  //     this->vmWritter.writePush("that", 0);
+  //     return;
+  //   }
 
-  // * a(...)+b
-  // * aaa(...)+b(....)
-  // * f(......)
-  std::stack<char> parenthesisStack{};
-  std::stringstream str;
-  size_t i = 0;
-  str << resultingExpression.at(i);
-  parenthesisStack.push(resultingExpression.at(i++));
-  while (!parenthesisStack.empty() && i <= resultingExpression.size() - 1) {
-    if (resultingExpression.at(i) == ')') {
-      parenthesisStack.pop();
+  if (expression.find("[") != std::string::npos && expression.find("]") &&
+      std::string::npos &&
+      expression.find_first_of("[") < expression.find_first_of("(")) {
+    std::string resultingExpression =
+        expression.substr(expression.find_first_of('['),
+                          expression.size() - expression.find_first_of('['));
+    std::string beforeOpenPar =
+        expression.substr(0, expression.find_first_of('['));
+    // * a+b(...)
+    if (std::regex_search(beforeOpenPar, _operatorsPatternRegex)) {
+      int i = 0;
+      for (; !std::regex_match(expression.substr(i, 1), _operatorsPatternRegex);
+           i++)
+        ;
+      std::cout << expression.substr(0, i) << "\n";
+      std::string lefts = expression.substr(0, i);
+      std::string _op = expression.substr(i, 1);
+      std::string right = expression.substr(i + 1);
+      this->_codeWrite(lefts);
+      this->_codeWrite(right);
+      this->vmWritter.writeArithmetic(_op);
+      return;
     }
-    if (resultingExpression.at(i) == '(') {
-      parenthesisStack.push(i);
-    }
+
+    // * a(...)+b
+    // * aaa(...)+b(....)
+    // * f(......)
+    std::stack<char> parenthesisStack{};
+    std::stringstream str;
+    size_t i = 0;
     str << resultingExpression.at(i);
-    i++;
-  }
-  i--;
-  // * a(...)+b
-  // * aaa(...)+b(....)
-  if (expression.size() - 1 > i + expression.find_first_of('(')) {
-    std::string lefts =
-        expression.substr(0, i + expression.find_first_of('(') + 1);
-    std::cout << lefts << "\n";
-    std::string _op =
-        expression.substr(i + expression.find_first_of('(') + 1, 1);
-    std::cout << _op << "\n";
-    std::string right =
-        expression.substr(i + expression.find_first_of('(') + 2);
-    std::cout << right << "\n";
-    this->_codeWrite(lefts);
-    this->_codeWrite(right);
-    this->vmWritter.writeArithmetic(_op);
+    parenthesisStack.push(resultingExpression.at(i++));
+    while (!parenthesisStack.empty() && i <= resultingExpression.size() - 1) {
+      if (resultingExpression.at(i) == ']') {
+        parenthesisStack.pop();
+      }
+      if (resultingExpression.at(i) == '[') {
+        parenthesisStack.push(i);
+      }
+      str << resultingExpression.at(i);
+      i++;
+    }
+    i--;
+    // * a(...)+b
+    // * aaa(...)+b(....)
+    if (expression.size() - 1 > i + expression.find_first_of('[')) {
+      std::string lefts =
+          expression.substr(0, i + expression.find_first_of('[') + 1);
+      std::cout << lefts << "\n";
+      std::string _op =
+          expression.substr(i + expression.find_first_of('[') + 1, 1);
+      std::cout << _op << "\n";
+      std::string right =
+          expression.substr(i + expression.find_first_of('[') + 2);
+      std::cout << right << "\n";
+      this->_codeWrite(lefts);
+      this->_codeWrite(right);
+      this->vmWritter.writeArithmetic(_op);
+      return;
+    }
+    /*a[.........]*/
+    if (expression.size() - 1 == i + expression.find_first_of('[')) {
+
+      /*Easy case*/
+      std::string lefts = expression.substr(0, expression.find_first_of("["));
+      std::string right = expression.substr(
+          expression.find_first_of("[") + 1,
+          expression.find_last_of("]") - expression.find_first_of("[") - 1);
+
+      this->_codeWrite(lefts);
+      this->_codeWrite(right);
+      this->vmWritter.writeArithmetic("add");
+      this->vmWritter.writePop("pointer", 1);
+      this->vmWritter.writePush("that", 0);
+      return;
+    }
     return;
   }
 
-  /*(........)&(.......)*/
-  if ((expression.substr(0, 1) == "(" &&
-       expression.substr(expression.size() - 1, 1) == ")")) {
-    expression = expression.substr(1, expression.size() - 2);
-    return this->_codeWrite(expression);
-  }
+  // * a+b(...)
+  if (expression.find("(") != std::string::npos && expression.find(")") &&
+      std::string::npos &&
+      expression.find_first_of("(") < expression.find_first_of("[")) {
+    std::string resultingExpression =
+        expression.substr(expression.find_first_of('('),
+                          expression.size() - expression.find_first_of('('));
+    std::string beforeOpenPar =
+        expression.substr(0, expression.find_first_of('('));
+    // * a+b(...)
+    if (std::regex_search(beforeOpenPar, _operatorsPatternRegex)) {
+      int i = 0;
+      for (; !std::regex_match(expression.substr(i, 1), _operatorsPatternRegex);
+           i++)
+        ;
+      std::cout << expression.substr(0, i) << "\n";
+      std::string lefts = expression.substr(0, i);
+      std::string _op = expression.substr(i, 1);
+      std::string right = expression.substr(i + 1);
+      this->_codeWrite(lefts);
+      this->_codeWrite(right);
+      this->vmWritter.writeArithmetic(_op);
+      return;
+    }
 
-  // * f(......)
-  if (expression.substr(i + expression.find_first_of('('), 1) == ")") {
-    std::cout << expression.substr(expression.find_first_of('(') + 1, i - 1)
-              << "\n";
-    std::stringstream streamExpression = std::stringstream(
-        expression.substr(expression.find_first_of('(') + 1, i - 1));
-
-    /*This was moved because it was neede above all determine
-     * if it was a method, because in that case this parameter needs to
-     * be pushed first*/
-    std::string functionName =
-        expression.substr(0, expression.find_first_of("("));
-
-    int nArgs = 0;
-    if (streamExpression.str().empty())
-      nArgs = 0;
-
-    else if (streamExpression.str().find(',') == std::string::npos)
-      nArgs = 1;
-    else {
-      std::string tmpStr(streamExpression.str());
-      for (size_t i = 0; i < tmpStr.size(); i++) {
-        if (tmpStr.at(i) == ',')
-          nArgs += 1;
+    // * a(...)+b
+    // * aaa(...)+b(....)
+    // * f(......)
+    std::stack<char> parenthesisStack{};
+    std::stringstream str;
+    size_t i = 0;
+    str << resultingExpression.at(i);
+    parenthesisStack.push(resultingExpression.at(i++));
+    while (!parenthesisStack.empty() && i <= resultingExpression.size() - 1) {
+      if (resultingExpression.at(i) == ')') {
+        parenthesisStack.pop();
       }
-      nArgs++;
+      if (resultingExpression.at(i) == '(') {
+        parenthesisStack.push(i);
+      }
+      str << resultingExpression.at(i);
+      i++;
     }
-    /*For calling passing this as extra argument*/
-
-    /*If function is called without the className is a method*/
-    /*if function is called through an object is also a method*/
-
-    if (functionName.find_first_of(".") == std::string::npos) {
-      this->vmWritter.writePush("pointer", 0);
-      nArgs++;
-      /*If is a method and and is in the same class the call the function
-       * ClassName.functionName*/
-      functionName = this->currentClass + "." + functionName;
-    } else if (this->_getSymbol(
-                   functionName.substr(0, functionName.find_first_of(".")))) {
-      SymbolTable::Symbol *s = this->_getSymbol(
-          functionName.substr(0, functionName.find_first_of(".")));
-      this->vmWritter.writePush(s->kind, s->posInSegment);
-      nArgs++;
-      /*When the method is called through the object we need to identify the
-       * class of the object to call the correct method */
-      functionName = s->type + "." +
-                     functionName.substr(functionName.find_first_of(".") + 1);
+    i--;
+    // * a(...)+b
+    // * aaa(...)+b(....)
+    if (expression.size() - 1 > i + expression.find_first_of('(')) {
+      std::string lefts =
+          expression.substr(0, i + expression.find_first_of('(') + 1);
+      std::cout << lefts << "\n";
+      std::string _op =
+          expression.substr(i + expression.find_first_of('(') + 1, 1);
+      std::cout << _op << "\n";
+      std::string right =
+          expression.substr(i + expression.find_first_of('(') + 2);
+      std::cout << right << "\n";
+      this->_codeWrite(lefts);
+      this->_codeWrite(right);
+      this->vmWritter.writeArithmetic(_op);
+      return;
     }
-    /**/
-    /*It will later organize*/
-    std::string element = "";
-    while (std::getline(streamExpression, element, ',')) {
-      /*Save object pointer in case is an string*/
-      this->_codeWrite(element);
-    }
-    this->vmWritter.writeCall(functionName, nArgs);
 
+    /*(........)&(.......)*/
+    if ((expression.substr(0, 1) == "(" &&
+         expression.substr(expression.size() - 1, 1) == ")")) {
+      expression = expression.substr(1, expression.size() - 2);
+      return this->_codeWrite(expression);
+    }
+
+    // * f(......)
+    if (expression.substr(i + expression.find_first_of('('), 1) == ")") {
+      std::cout << expression.substr(expression.find_first_of('(') + 1, i - 1)
+                << "\n";
+      std::stringstream streamExpression = std::stringstream(
+          expression.substr(expression.find_first_of('(') + 1, i - 1));
+
+      /*This was moved because it was neede above all determine
+       * if it was a method, because in that case this parameter needs to
+       * be pushed first*/
+      std::string functionName =
+          expression.substr(0, expression.find_first_of("("));
+
+      int nArgs = 0;
+      if (streamExpression.str().empty())
+        nArgs = 0;
+
+      else if (streamExpression.str().find(',') == std::string::npos)
+        nArgs = 1;
+      else {
+        std::string tmpStr(streamExpression.str());
+        for (size_t i = 0; i < tmpStr.size(); i++) {
+          if (tmpStr.at(i) == ',')
+            nArgs += 1;
+        }
+        nArgs++;
+      }
+      /*For calling passing this as extra argument*/
+
+      /*If function is called without the className is a method*/
+      /*if function is called through an object is also a method*/
+
+      if (functionName.find_first_of(".") == std::string::npos) {
+        this->vmWritter.writePush("pointer", 0);
+        nArgs++;
+        /*If is a method and and is in the same class the call the function
+         * ClassName.functionName*/
+        functionName = this->currentClass + "." + functionName;
+      } else if (this->_getSymbol(
+                     functionName.substr(0, functionName.find_first_of(".")))) {
+        SymbolTable::Symbol *s = this->_getSymbol(
+            functionName.substr(0, functionName.find_first_of(".")));
+        this->vmWritter.writePush(s->kind, s->posInSegment);
+        nArgs++;
+        /*When the method is called through the object we need to identify the
+         * class of the object to call the correct method */
+        functionName = s->type + "." +
+                       functionName.substr(functionName.find_first_of(".") + 1);
+      }
+      /**/
+      /*It will later organize*/
+      std::string element = "";
+      while (std::getline(streamExpression, element, ',')) {
+        /*Save object pointer in case is an string*/
+        this->_codeWrite(element);
+      }
+      this->vmWritter.writeCall(functionName, nArgs);
+
+      return;
+    }
     return;
   }
 }
