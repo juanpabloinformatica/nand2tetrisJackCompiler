@@ -3,6 +3,7 @@
 #include "Types.hpp"
 #include "VmWritter.hpp"
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <ios>
 #include <regex>
@@ -46,11 +47,13 @@ CompilationEngine::CompilationEngine(
 #endif
       flagIsDoStatement(false), classSymbolTable(SymbolTable()),
       subroutineSymbolTable(SymbolTable()),
+      subroutineTable(std::map<std::string, std::string>()),
       vmWritter(VmWritter(outputFilePath)), labelCounter(0) {
 }
 
 void CompilationEngine::run() {
 #ifndef DEBUG
+  this->populateSubroutineTable();
   this->compileClass();
 #else
   // this->compileExpression();
@@ -255,6 +258,10 @@ bool CompilationEngine::compileSubroutine() {
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
+  /*This needs to be added for later when calling a subroutine*/
+  this->subroutineTable.insert(
+      {this->tokenListKey(), this->currentSubroutineType});
+
   this->currentSubroutine = this->tokenListKey();
   // this->writeToFile();
   //
@@ -376,6 +383,7 @@ bool CompilationEngine::compileLet() {
 
   /*Idkn if good idea I will create a flag */
   bool isArray = (this->tokenListKey(1) == "[") ? true : false;
+  std::string saveAddress;
   if (!(this->tokenListValue() == JackTypes::IDENTIFIER))
     return false;
 
@@ -405,6 +413,7 @@ bool CompilationEngine::compileLet() {
       expression.append(this->tokenList.at(i)->begin()->first);
 
     std::cout << expression << "\n";
+    saveAddress = std::string(expression);
 
     this->_codeWrite(expression);
 
@@ -421,8 +430,8 @@ bool CompilationEngine::compileLet() {
     //                   [](char letter) { return letter == '['; }) > 1;
 
     // if (hasInnerArray) {
-    this->vmWritter.writePush("pointer", 1);
-    this->vmWritter.writePop("temp", 2);
+    // this->vmWritter.writePush("pointer", 1);
+    // this->vmWritter.writePop("temp", 2);
     // }
 
     // this->writeToFile();
@@ -472,7 +481,12 @@ bool CompilationEngine::compileLet() {
   if (!isArray)
     this->vmWritter.writePop(symbol->kind, symbol->posInSegment);
   else {
-    this->vmWritter.writePush("temp", 2);
+    // this->vmWritter.writePush("temp", 2);
+    /*re-getting the address not usage of global variable*/
+    this->vmWritter.writePush(symbol->kind,symbol->posInSegment);
+    this->_codeWrite(saveAddress);
+    this->vmWritter.writeArithmetic("add");
+
     this->vmWritter.writePop("pointer", 1);
     this->vmWritter.writePop("that", 0);
   }
@@ -712,7 +726,7 @@ bool CompilationEngine::compileWhile() {
   if (!this->compileStatements()) /*this->compileStatements();*/
     return false;
   //  this->flagIsDoStatement = true;
-  this->labelCounter = loopLabelCounter;
+  // this->labelCounter = loopLabelCounter;
 
   if (!(this->tokenListKey() == "}"))
     return false;
@@ -722,10 +736,10 @@ bool CompilationEngine::compileWhile() {
 
   this->vmWritter.writeGoto(this->currentClass + "_" + this->currentSubroutine +
                             "_" + "loop" + "_" +
-                            std::to_string(this->labelCounter - 1));
+                            std::to_string(loopLabelCounter - 1));
   this->vmWritter.writeLabel(this->currentClass + "_" +
                              this->currentSubroutine + "_" + "Endloop" + "_" +
-                             std::to_string(this->labelCounter - 1));
+                             std::to_string(loopLabelCounter - 1));
 
   // this->labelCounter = 0;
   // this->writeToFileFinishNonTerminal("</whileStatement>");
@@ -759,9 +773,12 @@ bool CompilationEngine::compileDo() {
   bool hasAString =
       (std::regex_search(expression, std::regex(R"(\".*\")"))) ? true : false;
 
+  /*Saving state*/
   if (hasAString) {
     this->vmWritter.writePush("pointer", 0);
     this->vmWritter.writePop("temp", 2);
+    // this->vmWritter.writePush("pointer", 1);
+    // this->vmWritter.writePop("temp", 3);
   }
 
   this->_codeWrite(expression);
@@ -779,6 +796,8 @@ bool CompilationEngine::compileDo() {
   if (hasAString) {
     this->vmWritter.writePush("temp", 2);
     this->vmWritter.writePop("pointer", 0);
+    // this->vmWritter.writePush("temp", 3);
+    // this->vmWritter.writePop("pointer", 1);
   }
 
   // this->writeToFileFinishNonTerminal("</doStatement>");
@@ -984,6 +1003,16 @@ CompilationEngine::_getSymbol(const std::string &symbolName) {
   //
   return NULL;
 }
+std::string
+CompilationEngine::_getSubroutineType(const std::string &subroutineName) {
+  std::string functionType = "";
+  try {
+    functionType = this->subroutineTable.at(subroutineName);
+  } catch (const std::out_of_range &oor) {
+    functionType = "";
+  }
+  return functionType;
+}
 void CompilationEngine::_codeWrite(std::string &expression) {
   std::cout << expression << "\n";
 
@@ -1024,6 +1053,7 @@ void CompilationEngine::_codeWrite(std::string &expression) {
       this->vmWritter.writePop("pointer", 0);
     }
     this->vmWritter.writePush("pointer", 0);
+    return;
   }
 
   if (JackTypes::tokenIsIntegerConstant(expression)) {
@@ -1304,12 +1334,21 @@ void CompilationEngine::_codeWrite(std::string &expression) {
       }
       /*For calling passing this as extra argument*/
 
-      /*If function is called without the className is a method*/
+      /*If function is called without the className is a method*/ /*This was the
+      mistake*/
       /*if function is called through an object is also a method*/
 
+      /*I need to check what is the type of the function*/ /*I could createa a
+      table with the functions signature but man*/
       if (functionName.find_first_of(".") == std::string::npos) {
-        this->vmWritter.writePush("pointer", 0);
-        nArgs++;
+        /*This needed to be fixed*/
+        /*Check function to be called type*/
+        // std::string functionType = this->subroutineTable.at(functionName);
+        std::string functionType = this->_getSubroutineType(functionName);
+        if (functionType == "method") {
+          this->vmWritter.writePush("pointer", 0);
+          nArgs++;
+        }
         /*If is a method and and is in the same class the call the function
          * ClassName.functionName*/
         functionName = this->currentClass + "." + functionName;
@@ -1614,4 +1653,13 @@ CompilationEngine::getTokenList() {
 }
 CompilationEngine::~CompilationEngine() {
   std::cout << "Calling compilation engine destructor" << "\n";
+}
+void CompilationEngine::populateSubroutineTable() {
+#define KEY_VALUE(index) (this->tokenList.at(index)->begin()->first)
+  for (size_t i = 0; i < this->tokenList.size(); i++) {
+    if (KEY_VALUE(i) == "method" || KEY_VALUE(i) == "function") {
+      this->subroutineTable.insert({KEY_VALUE(i + 2), KEY_VALUE(i)});
+    }
+  }
+#undef KEY_VALUE
 }

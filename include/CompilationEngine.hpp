@@ -30,6 +30,13 @@ private:
   int flagIsDoStatement;
   SymbolTable classSymbolTable;
   SymbolTable subroutineSymbolTable;
+  /*This will be needed for identify if the subroutine is a method or a
+   * function* this is necessary for knowing how the call command will be
+   * invoked, if is a method I need to push the object as 1 argument if not is
+   * not needed.
+   */
+  /*subroutineName:type*/
+  std::map<std::string, std::string> subroutineTable;
   VmWritter vmWritter;
   /**/
   std::string currentClass;
@@ -63,6 +70,8 @@ private:
   void _codeWrite(std::string &expression);
   /*For getting the symbol information*/
   SymbolTable::Symbol *_getSymbol(const std::string &symbolName);
+  /*For getting subroutineType*/
+  std::string _getSubroutineType(const std::string &subroutineName);
   void compileTerm(int *iteration, bool *succesfull);
   void compileExpressionList();
   // bool tokenIsOp();
@@ -72,6 +81,9 @@ private:
   void writeToFileFinishNonTerminal(const std::string &nonTerminal);
   /*For handling loops*/
   int labelCounter;
+  /*Needed for been able to know when a subroutine that belongs
+   * to the same module is either a method of a function*/
+  void populateSubroutineTable();
 };
 
 #endif
